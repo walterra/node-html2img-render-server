@@ -27,7 +27,8 @@
     "uuid": "^9.0.1",
     "helmet": "^7.1.0",
     "morgan": "^1.10.0",
-    "winston": "^3.11.0"
+    "winston": "^3.11.0",
+    "piexifjs": "^1.0.6"
   },
   "devDependencies": {
     "eslint": "^8.55.0",

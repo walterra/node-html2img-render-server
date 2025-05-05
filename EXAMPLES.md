@@ -4,14 +4,59 @@ This document provides examples of how to use the HTML Rendering Service with cU
 
 ## Basic Usage
 
-### Render Simple HTML
+### Render Simple HTML (Direct Image Response)
 
 ```bash
 curl -X POST http://localhost:3000/render \
   -H "Content-Type: application/json" \
   -d '{
     "html": "<div style=\"padding: 20px; background-color: #f0f0f0;\">Hello World</div>"
-  }'
+  }' \
+  --output hello.png
+```
+
+This returns the PNG image directly and saves it to hello.png. Metadata is embedded in the image's EXIF data.
+
+### Get Image with JSON Response
+
+```bash
+curl -X POST http://localhost:3000/render \
+  -H "Content-Type: application/json" \
+  -d '{
+    "html": "<div style=\"padding: 20px; background-color: #f0f0f0;\">Hello World</div>",
+    "responseFormat": "json"
+  }' | jq
+```
+
+The response will include the base64-encoded image and metadata:
+
+```json
+{
+  "image": "base64encodedimagedata...",
+  "contentType": "image/png",
+  "metadata": {
+    "screenshotId": "550e8400-e29b-41d4-a716-446655440000",
+    "renderedAt": "2025-05-02T12:34:56.789Z",
+    "viewport": {
+      "width": 1280,
+      "height": 720,
+      "deviceScaleFactor": 1
+    },
+    "browserVersion": "Chromium 120.0.6099.109",
+    "renderingTime": 345
+  }
+}
+```
+
+### Extract and Save Image from JSON Response
+
+```bash
+curl -X POST http://localhost:3000/render \
+  -H "Content-Type: application/json" \
+  -d '{
+    "html": "<div style=\"padding: 20px; background-color: #f0f0f0;\">Hello World</div>",
+    "responseFormat": "json"
+  }' | jq -r '.image' | base64 -d > output.png
 ```
 
 ### HTML with Separate CSS
@@ -22,7 +67,8 @@ curl -X POST http://localhost:3000/render \
   -d '{
     "html": "<div class=\"card\">Styled Card</div>",
     "css": ".card { padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); background-color: white; }"
-  }'
+  }' \
+  --output styled_card.png
 ```
 
 ### Custom Viewport Size
@@ -37,8 +83,22 @@ curl -X POST http://localhost:3000/render \
       "height": 1080,
       "deviceScaleFactor": 2
     }
-  }'
+  }' \
+  --output gradient_bg.png
 ```
+
+### View Response Headers with Metadata
+
+```bash
+curl -i -X POST http://localhost:3000/render \
+  -H "Content-Type: application/json" \
+  -d '{
+    "html": "<div>Simple Element</div>"
+  }' \
+  --output /dev/null
+```
+
+This will show the HTTP headers containing metadata without saving the image.
 
 ## Advanced Features
 
@@ -50,7 +110,8 @@ curl -X POST http://localhost:3000/render \
   -d '{
     "html": "<div id=\"delayed-content\"></div><script>setTimeout(() => { document.getElementById(\"delayed-content\").innerHTML = \"<h1>Content Loaded!</h1>\"; }, 500);</script>",
     "waitForSelector": "#delayed-content h1"
-  }'
+  }' \
+  --output delayed_content.png
 ```
 
 ### Clip to Element
@@ -61,7 +122,8 @@ curl -X POST http://localhost:3000/render \
   -d '{
     "html": "<div style=\"padding: 50px; background-color: lightgray;\"><div id=\"target\" style=\"width: 300px; height: 200px; background-color: coral; padding: 20px;\">Only this element will be captured</div></div>",
     "clipSelector": "#target"
-  }'
+  }' \
+  --output clipped.png
 ```
 
 ### With JavaScript Interaction
@@ -72,7 +134,8 @@ curl -X POST http://localhost:3000/render \
   -d '{
     "html": "<button id=\"colorButton\">Click Me</button><div id=\"box\" style=\"width: 200px; height: 200px; background-color: blue;\"></div>",
     "javascript": "document.getElementById(\"colorButton\").addEventListener(\"click\", function() { document.getElementById(\"box\").style.backgroundColor = \"red\"; }); document.getElementById(\"colorButton\").click();"
-  }'
+  }' \
+  --output interaction.png
 ```
 
 ### With Custom Fonts
@@ -90,7 +153,8 @@ curl -X POST http://localhost:3000/render \
         "style": "normal"
       }
     ]
-  }'
+  }' \
+  --output custom_font.png
 ```
 
 ### With Image Assets
@@ -103,68 +167,76 @@ curl -X POST http://localhost:3000/render \
     "assets": {
       "logo.png": "BASE64_ENCODED_IMAGE_DATA_HERE"
     }
-  }'
+  }' \
+  --output with_assets.png
 ```
 
-## Retrieving Screenshots
+## Using with JavaScript/Node.js
 
-### Direct Access to Generated Screenshot
-
-After receiving a response like:
-
-```json
-{
-  "screenshotId": "550e8400-e29b-41d4-a716-446655440000",
-  "screenshotUrl": "/screenshots/550e8400-e29b-41d4-a716-446655440000.png",
-  "metadata": {
-    "renderedAt": "2025-05-02T12:34:56.789Z",
-    "viewport": { "width": 1280, "height": 720, "deviceScaleFactor": 1 },
-    "browserVersion": "Chromium 120.0.6099.109",
-    "renderingTime": 345
-  }
-}
-```
-
-You can download the screenshot:
-
-```bash
-curl -O http://localhost:3000/screenshots/550e8400-e29b-41d4-a716-446655440000.png
-```
-
-Or use the screenshot ID:
-
-```bash
-curl -L http://localhost:3000/render/screenshot/550e8400-e29b-41d4-a716-446655440000 --output screenshot.png
-```
-
-## Using with Visual Regression Testing
-
-### Example with Jest and jest-image-snapshot
+### Direct Image Response with Axios
 
 ```javascript
 const axios = require('axios');
-const { toMatchImageSnapshot } = require('jest-image-snapshot');
-expect.extend({ toMatchImageSnapshot });
+const fs = require('fs');
 
-test('component renders correctly', async () => {
-  // Call the render service
-  const response = await axios.post('http://localhost:3000/render', {
-    html: '<div class="card">Product Title</div>',
-    css: '.card { border: 1px solid #ccc; padding: 16px; }',
-    viewport: { width: 500, height: 300 }
-  });
-  
-  const { screenshotUrl } = response.data;
-  
-  // Download the image
-  const imageResponse = await axios.get(
-    `http://localhost:3000${screenshotUrl}`,
-    { responseType: 'arraybuffer' }
-  );
-  
-  const buffer = Buffer.from(imageResponse.data);
-  
-  // Compare with baseline image
-  expect(buffer).toMatchImageSnapshot();
-});
+async function renderAndSaveImage() {
+  try {
+    // Request the image directly
+    const response = await axios.post('http://localhost:3000/render', {
+      html: '<div class="card">Product Title</div>',
+      css: '.card { border: 1px solid #ccc; padding: 16px; }'
+    }, {
+      responseType: 'arraybuffer'
+    });
+    
+    // Log metadata from headers
+    console.log('Image generated in:', response.headers['x-rendering-time'], 'ms');
+    console.log('Screenshot ID:', response.headers['x-screenshot-id']);
+    
+    // Save the image
+    fs.writeFileSync('product.png', response.data);
+    console.log('Image saved to product.png');
+    
+    return response.headers['x-screenshot-id'];
+  } catch (error) {
+    console.error('Error rendering image:', error.message);
+  }
+}
+
+renderAndSaveImage();
+```
+
+### JSON Response with Axios
+
+```javascript
+const axios = require('axios');
+const fs = require('fs');
+
+async function renderAndExtractData() {
+  try {
+    // Request JSON response with image and metadata
+    const response = await axios.post('http://localhost:3000/render', {
+      html: '<div class="card">Product Title</div>',
+      css: '.card { border: 1px solid #ccc; padding: 16px; }',
+      responseFormat: 'json'
+    });
+    
+    // Get image data and metadata
+    const { image, metadata } = response.data;
+    
+    // Save the image
+    const imageBuffer = Buffer.from(image, 'base64');
+    fs.writeFileSync('product.png', imageBuffer);
+    
+    // Use metadata
+    console.log('Image generated in:', metadata.renderingTime, 'ms');
+    console.log('Screenshot ID:', metadata.screenshotId);
+    
+    return metadata;
+  } catch (error) {
+    console.error('Error rendering image:', error.message);
+  }
+}
+
+renderAndExtractData();
 ```

@@ -6,7 +6,7 @@ const { ApiError } = require('../middleware/error');
 
 /**
  * @route POST /render
- * @description Renders HTML content and returns screenshot information
+ * @description Renders HTML content and returns the screenshot image directly
  * @access Public
  */
 router.post('/', validatePayload, async (req, res, next) => {
@@ -19,7 +19,8 @@ router.post('/', validatePayload, async (req, res, next) => {
       waitForSelector,
       clipSelector,
       assets,
-      fonts
+      fonts,
+      responseFormat = 'image' // 'image' or 'json'
     } = req.body;
 
     // Render HTML and get screenshot
@@ -31,10 +32,34 @@ router.post('/', validatePayload, async (req, res, next) => {
       waitForSelector,
       clipSelector,
       assets,
-      fonts
+      fonts,
+      embedMetadata: true // Always embed metadata in the image
     });
 
-    res.json(result);
+    // Determine how to return the response based on requested format
+    if (responseFormat === 'json') {
+      // Return both image data (as base64) and metadata
+      res.json({
+        image: result.imageBuffer.toString('base64'),
+        contentType: result.contentType,
+        metadata: result.metadata
+      });
+    } else {
+      // Set appropriate headers for image response
+      res.set('Content-Type', result.contentType);
+      res.set('X-Screenshot-ID', result.metadata.screenshotId);
+      res.set('X-Rendering-Time', result.metadata.renderingTime);
+      res.set('X-Browser-Version', result.metadata.browserVersion);
+      res.set('X-Rendered-At', result.metadata.renderedAt);
+      
+      // Add viewport info in headers
+      Object.entries(result.metadata.viewport).forEach(([key, value]) => {
+        res.set(`X-Viewport-${key.charAt(0).toUpperCase() + key.slice(1)}`, value);
+      });
+      
+      // Stream the image buffer directly to client
+      res.send(result.imageBuffer);
+    }
   } catch (error) {
     // Convert playwright errors to API errors
     if (error.name === 'TimeoutError') {
@@ -46,21 +71,23 @@ router.post('/', validatePayload, async (req, res, next) => {
 });
 
 /**
- * @route GET /render/screenshot/:id
- * @description Gets a screenshot by ID
+ * @route POST /render/metadata
+ * @description Extracts and returns metadata from a previously rendered image
  * @access Public
  */
-router.get('/screenshot/:id', async (req, res, next) => {
+router.post('/metadata', async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const { image } = req.body;
     
-    // Validate ID format
-    if (!id || !/^[a-zA-Z0-9-]+$/.test(id)) {
-      return next(new ApiError('Invalid screenshot ID', 400));
+    if (!image) {
+      return next(new ApiError('Image data is required', 400));
     }
     
-    // Redirect to the screenshot URL
-    res.redirect(`/screenshots/${id}.png`);
+    // TODO: If needed, implement metadata extraction from image here
+    
+    res.status(501).json({ 
+      error: 'Metadata extraction from existing images not implemented yet' 
+    });
   } catch (error) {
     next(error);
   }

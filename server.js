@@ -3,7 +3,6 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
-const path = require('path');
 
 // Import middleware
 const { errorHandler, notFound, timeout, logger } = require('./src/middleware/error');
@@ -20,9 +19,6 @@ app.use(rateLimit(60, 60 * 1000)); // 60 requests per minute
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(morgan('combined', { stream: { write: message => logger.info(message.trim()) } }));
-
-// Serve static files from public directory
-app.use('/screenshots', express.static(path.join(__dirname, 'public/screenshots')));
 
 // Import routes
 const renderRoutes = require('./src/routes/render');

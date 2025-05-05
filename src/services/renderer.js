@@ -1,6 +1,5 @@
 const { chromium } = require('playwright');
-const fs = require('fs').promises;
-const path = require('path');
+const piexif = require('piexifjs');
 const { v4: uuidv4 } = require('uuid');
 const { addAssetsToPage } = require('./assets');
 
@@ -58,9 +57,46 @@ function createHTMLContent(params) {
 }
 
 /**
- * Renders HTML content and takes a screenshot
+ * Embeds metadata as EXIF in a PNG image
+ * @param {Buffer} imageBuffer - PNG image buffer
+ * @param {Object} metadata - Metadata to embed
+ * @returns {Buffer} - PNG with embedded metadata
+ */
+function embedMetadataInImage(imageBuffer, metadata) {
+  try {
+    // Convert metadata to string and add it to the EXIF UserComment field
+    const metadataStr = JSON.stringify(metadata);
+    
+    // Create basic EXIF data structure with only UserComment
+    const exifObj = {
+      "0th": {},
+      "Exif": {
+        [piexif.ExifIFD.UserComment]: metadataStr
+      },
+      "GPS": {},
+      "Interop": {},
+      "1st": {},
+      "thumbnail": null
+    };
+    
+    // Convert EXIF to binary and insert into image
+    const exifBytes = piexif.dump(exifObj);
+    const dataUri = "data:image/png;base64," + imageBuffer.toString('base64');
+    const newDataUri = piexif.insert(exifBytes, dataUri);
+    
+    // Extract base64 data and convert back to buffer
+    const base64Data = newDataUri.replace(/^data:image\/png;base64,/, "");
+    return Buffer.from(base64Data, 'base64');
+  } catch (error) {
+    console.error('Error embedding metadata:', error);
+    return imageBuffer; // Return original if embedding fails
+  }
+}
+
+/**
+ * Renders HTML content and returns the screenshot
  * @param {object} params - Rendering parameters
- * @returns {object} - Screenshot information
+ * @returns {object} - Screenshot buffer and metadata
  */
 async function renderHTML(params) {
   const {
@@ -71,7 +107,8 @@ async function renderHTML(params) {
     waitForSelector,
     clipSelector,
     assets,
-    fonts
+    fonts,
+    embedMetadata = true
   } = params;
 
   const browser = await getBrowser();
@@ -80,11 +117,6 @@ async function renderHTML(params) {
     deviceScaleFactor: viewport.deviceScaleFactor || 1,
     userAgent: 'HTML-Render-Service/1.0'
   });
-
-  // Generate screenshot ID
-  const screenshotId = uuidv4();
-  const screenshotFileName = `${screenshotId}.png`;
-  const screenshotPath = path.join(__dirname, '../../public/screenshots', screenshotFileName);
   
   let page = null;
   
@@ -110,9 +142,9 @@ async function renderHTML(params) {
     const startTime = Date.now();
     
     const screenshotOptions = {
-      path: screenshotPath,
       type: 'png',
-      fullPage: !clipSelector
+      fullPage: !clipSelector,
+      omitBackground: false
     };
     
     // Clip to selector if specified
@@ -131,26 +163,37 @@ async function renderHTML(params) {
       }
     }
     
-    await page.screenshot(screenshotOptions);
+    // Take screenshot and get buffer directly
+    const screenshotBuffer = await page.screenshot(screenshotOptions);
     
     const renderingTime = Date.now() - startTime;
     
     // Get browser version
     const browserVersion = await browser.version();
     
-    // Create result
-    const result = {
-      screenshotId,
-      screenshotUrl: `/screenshots/${screenshotFileName}`,
-      metadata: {
-        renderedAt: new Date().toISOString(),
-        viewport,
-        browserVersion,
-        renderingTime
-      }
+    // Generate a unique ID for reference
+    const screenshotId = uuidv4();
+    
+    // Create metadata
+    const metadata = {
+      renderedAt: new Date().toISOString(),
+      viewport,
+      browserVersion,
+      renderingTime,
+      screenshotId
     };
     
-    return result;
+    // Embed metadata in image if requested
+    const finalImageBuffer = embedMetadata ? 
+      embedMetadataInImage(screenshotBuffer, metadata) : 
+      screenshotBuffer;
+    
+    // Return both image and metadata
+    return {
+      imageBuffer: finalImageBuffer,
+      metadata,
+      contentType: 'image/png'
+    };
   } finally {
     if (page) {
       await page.close();

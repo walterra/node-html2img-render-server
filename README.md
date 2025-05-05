@@ -45,17 +45,35 @@ This service solves the common challenge in visual regression testing where diff
       "weight": "400",
       "style": "normal"
     }
-  ]
+  ],
+  "responseFormat": "image"
 }
 ```
 
-#### Response
+#### Response Formats
+
+##### Default: Direct Image Response (responseFormat = "image")
+
+By default, the service returns the rendered image directly as binary data with Content-Type: `image/png`. Metadata is embedded in the image's EXIF data and also provided via HTTP headers:
+
+- `X-Screenshot-ID`: Unique ID for the screenshot
+- `X-Rendering-Time`: Time taken to render in milliseconds
+- `X-Browser-Version`: Browser version used for rendering
+- `X-Rendered-At`: ISO timestamp when the image was rendered
+- `X-Viewport-Width`: Viewport width used
+- `X-Viewport-Height`: Viewport height used
+- `X-Viewport-DeviceScaleFactor`: Device scale factor used
+
+##### JSON Response (responseFormat = "json")
+
+When `responseFormat` is set to `"json"`, the response is:
 
 ```json
 {
-  "screenshotId": "550e8400-e29b-41d4-a716-446655440000",
-  "screenshotUrl": "/screenshots/550e8400-e29b-41d4-a716-446655440000.png",
+  "image": "base64encodedimagecontent",
+  "contentType": "image/png",
   "metadata": {
+    "screenshotId": "550e8400-e29b-41d4-a716-446655440000",
     "renderedAt": "2025-05-02T12:34:56.789Z",
     "viewport": { "width": 1280, "height": 720, "deviceScaleFactor": 1 },
     "browserVersion": "Chromium 120.0.6099.109",
@@ -88,29 +106,61 @@ yarn start
 
 ## Usage in Tests
 
+### Direct Image Response
+
 ```javascript
 const axios = require('axios');
 
-it('component renders correctly', async () => {
+it('component renders correctly with direct image response', async () => {
   // Get component HTML
   const html = `<div class="card">Product Title</div>`;
   
-  // Call the render service
+  // Call the render service with default responseFormat (image)
   const response = await axios.post('http://render-service:3000/render', {
     html,
     css: `.card { border: 1px solid #ccc; }`,
     viewport: { width: 500, height: 300 }
+  }, {
+    responseType: 'arraybuffer' // Important: tell axios to expect binary data
   });
   
-  const { screenshotUrl } = response.data;
+  // The response.data is already the image buffer
+  const buffer = Buffer.from(response.data);
   
-  // Download the image
-  const imageResponse = await axios.get(
-    `http://render-service:3000${screenshotUrl}`,
-    { responseType: 'arraybuffer' }
-  );
+  // Access metadata from headers
+  const renderTime = response.headers['x-rendering-time'];
+  const screenshotId = response.headers['x-screenshot-id'];
   
-  const buffer = Buffer.from(imageResponse.data);
+  // Compare with baseline image
+  expect(buffer).toMatchImageSnapshot();
+});
+```
+
+### JSON Response
+
+```javascript
+const axios = require('axios');
+
+it('component renders correctly with JSON response', async () => {
+  // Get component HTML
+  const html = `<div class="card">Product Title</div>`;
+  
+  // Call the render service with JSON responseFormat
+  const response = await axios.post('http://render-service:3000/render', {
+    html,
+    css: `.card { border: 1px solid #ccc; }`,
+    viewport: { width: 500, height: 300 },
+    responseFormat: 'json'
+  });
+  
+  // Extract image data and metadata
+  const { image, metadata } = response.data;
+  
+  // Convert base64 image to buffer
+  const buffer = Buffer.from(image, 'base64');
+  
+  // Access metadata directly
+  console.log(`Rendered in ${metadata.renderingTime}ms using ${metadata.browserVersion}`);
   
   // Compare with baseline image
   expect(buffer).toMatchImageSnapshot();
