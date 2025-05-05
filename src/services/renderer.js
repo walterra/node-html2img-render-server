@@ -105,7 +105,7 @@ async function renderHTML(params) {
   const context = await browser.newContext({
     viewport,
     deviceScaleFactor: viewport.deviceScaleFactor || 1,
-    userAgent: 'HTML-Render-Service/1.0'
+    userAgent: 'html2img-render-server/1.0'
   });
   
   let page = null;

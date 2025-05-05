@@ -1,6 +1,6 @@
-# HTML Rendering Service
+# html2img-render-server
 
-A consistent environment service for visual regression testing that accepts HTML content directly and returns screenshots.
+A server for converting HTML to images with Playwright - allows direct HTML input and returns screenshots for visual testing.
 
 ## Overview
 
@@ -20,10 +20,10 @@ This service solves the common challenge in visual regression testing where diff
 
 ```bash
 # Pull the image
-docker pull yourorg/html-renderer
+docker pull yourorg/html2img-render-server
 
 # Run the service
-docker run -p 3000:3000 yourorg/html-renderer
+docker run -p 3000:3000 yourorg/html2img-render-server
 ```
 
 ### Basic Usage

@@ -1,7 +1,7 @@
 {
-  "name": "html-render-service",
+  "name": "html2img-render-server",
   "version": "1.0.0",
-  "description": "A consistent environment service for visual regression testing that accepts HTML content directly and returns screenshots",
+  "description": "A server for converting HTML to images with Playwright - allows direct HTML input and returns screenshots for visual testing",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

@@ -1,11 +1,11 @@
 # Development Guide
 
-This document provides information for developers who want to modify, extend, or contribute to the HTML Rendering Service.
+This document provides information for developers who want to modify, extend, or contribute to the html2img-render-server.
 
 ## Project Structure
 
 ```
-html-render-service/
+html2img-render-server/
 ├── src/
 │   ├── middleware/      # Express middleware (error handling, security)
 │   ├── routes/          # API routes
@@ -34,8 +34,8 @@ html-render-service/
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourorg/html-render-service.git
-cd html-render-service
+git clone https://github.com/yourorg/html2img-render-server.git
+cd html2img-render-server
 
 # Install dependencies
 yarn

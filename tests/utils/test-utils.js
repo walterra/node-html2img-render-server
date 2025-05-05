@@ -1,5 +1,5 @@
 /**
- * Common test utilities for the HTML rendering service
+ * Common test utilities for the html2img-render-server
  */
 const path = require('path');
 const { PNG } = require('pngjs');
