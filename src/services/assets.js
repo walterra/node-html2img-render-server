@@ -9,79 +9,44 @@
  * @returns {Promise<void>}
  */
 async function addAssetsToPage(page, options) {
-  const { assets, fonts } = options;
+  const { assets, fonts } = options || {};
   
-  // Inject custom assets
-  if (assets && Object.keys(assets).length > 0) {
-    await page.evaluate((assetMap) => {
-      // Create a function to handle asset requests
-      window.resolveAsset = function(url) {
-        const assetName = url.split('/').pop();
-        if (assetMap[assetName]) {
-          return `data:${getMimeType(assetName)};base64,${assetMap[assetName]}`;
-        }
-        return url;
-      };
-      
-      // Helper to determine MIME type from file extension
-      function getMimeType(filename) {
-        const ext = filename.split('.').pop().toLowerCase();
-        const mimeTypes = {
-          'png': 'image/png',
-          'jpg': 'image/jpeg',
-          'jpeg': 'image/jpeg',
-          'gif': 'image/gif',
-          'svg': 'image/svg+xml',
-          'webp': 'image/webp',
-          'woff': 'font/woff',
-          'woff2': 'font/woff2',
-          'ttf': 'font/ttf',
-          'otf': 'font/otf',
-          'eot': 'application/vnd.ms-fontobject'
-        };
-        return mimeTypes[ext] || 'application/octet-stream';
-      }
-      
-      // Override fetch to handle asset URLs
-      const originalFetch = window.fetch;
-      window.fetch = function(url, options) {
-        if (typeof url === 'string') {
-          const assetName = url.split('/').pop();
-          if (assetMap[assetName]) {
-            return originalFetch(window.resolveAsset(url), options);
+  try {
+    // Inject custom assets (images, etc.)
+    if (assets && Object.keys(assets).length > 0) {
+      // Set up route interception for assets
+      await page.route('**/*', async (route) => {
+        const url = route.request().url();
+        const fileName = url.split('/').pop();
+        
+        // Check if this is one of our assets
+        if (assets[fileName]) {
+          try {
+            const base64Data = assets[fileName];
+            const mimeType = getMimeType(fileName);
+            const buffer = Buffer.from(base64Data, 'base64');
+            
+            // Fulfill the request with our asset data
+            await route.fulfill({
+              status: 200,
+              contentType: mimeType,
+              body: buffer
+            });
+          } catch (error) {
+            console.error(`Error serving asset ${fileName}:`, error);
+            await route.continue();
           }
-        }
-        return originalFetch(url, options);
-      };
-      
-      // Override Image.prototype.src to handle asset URLs
-      const originalImageSrc = Object.getOwnPropertyDescriptor(Image.prototype, 'src');
-      Object.defineProperty(Image.prototype, 'src', {
-        get: function() {
-          return originalImageSrc.get.call(this);
-        },
-        set: function(value) {
-          originalImageSrc.set.call(this, window.resolveAsset(value));
+        } else {
+          // Not one of our assets, continue normal handling
+          await route.continue();
         }
       });
-      
-      // Patch existing image elements
-      document.querySelectorAll('img').forEach(img => {
-        const originalSrc = img.getAttribute('src');
-        if (originalSrc) {
-          img.src = window.resolveAsset(originalSrc);
-        }
-      });
-      
-    }, assets);
-  }
-  
-  // Inject custom fonts
-  if (fonts && fonts.length > 0) {
-    await page.evaluate((fontList) => {
-      // Add @font-face declarations to head
-      const style = document.createElement('style');
-      style.textContent = fontList.map(font => {
+    }
+    
+    // Inject custom fonts - simplify to just CSS injection without forcing font load
+    if (fonts && fonts.length > 0) {
+      // Create CSS for all the fonts
+      const fontFaceCSS = fonts.map(font => {
         return `
           @font-face {
             font-family: '${font.name}';
@@ -93,33 +58,39 @@ async function addAssetsToPage(page, options) {
         `;
       }).join('\n');
       
-      document.head.appendChild(style);
+      // Add the font-face declarations to the page
+      await page.addStyleTag({ content: fontFaceCSS });
       
-      // Force font loading by creating temporary elements
-      const div = document.createElement('div');
-      div.style.opacity = '0';
-      div.style.position = 'absolute';
-      div.style.top = '-9999px';
-      
-      fontList.forEach(font => {
-        const span = document.createElement('span');
-        span.style.fontFamily = font.name;
-        span.textContent = 'Font Loading';
-        div.appendChild(span);
-      });
-      
-      document.body.appendChild(div);
-      
-      // Remove after a delay
-      setTimeout(() => {
-        document.body.removeChild(div);
-      }, 100);
-      
-    }, fonts);
-    
-    // Wait a moment for fonts to load
-    await page.waitForTimeout(100);
+      // Wait a brief moment to allow any font processing
+      await page.waitForTimeout(50);
+    }
+  } catch (error) {
+    // Log and continue if there are issues with assets
+    console.error('Error adding assets to page:', error);
   }
+}
+
+/**
+ * Determine MIME type from file extension
+ * @param {string} filename - Filename with extension
+ * @returns {string} - MIME type
+ */
+function getMimeType(filename) {
+  const ext = filename.split('.').pop().toLowerCase();
+  const mimeTypes = {
+    'png': 'image/png',
+    'jpg': 'image/jpeg',
+    'jpeg': 'image/jpeg',
+    'gif': 'image/gif',
+    'svg': 'image/svg+xml',
+    'webp': 'image/webp',
+    'woff': 'font/woff',
+    'woff2': 'font/woff2',
+    'ttf': 'font/ttf',
+    'otf': 'font/otf',
+    'eot': 'application/vnd.ms-fontobject'
+  };
+  return mimeTypes[ext] || 'application/octet-stream';
 }
 
 module.exports = {
