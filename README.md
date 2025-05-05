@@ -14,6 +14,32 @@ This service solves the common challenge in visual regression testing where diff
 - **Flexible Screenshot Options**: Configurable viewport, element selection, and waiting conditions
 - **Containerized**: Runs in Docker for maximum consistency and portability
 
+## Quick Start
+
+### Running with Docker (Recommended)
+
+```bash
+# Pull the image
+docker pull yourorg/html-renderer
+
+# Run the service
+docker run -p 3000:3000 yourorg/html-renderer
+```
+
+### Basic Usage
+
+```bash
+# Render HTML to an image
+curl -X POST http://localhost:3000/render \
+  -H "Content-Type: application/json" \
+  -d '{
+    "html": "<div style=\"padding: 20px; background-color: #f0f0f0;\">Hello World</div>"
+  }' \
+  --output hello.png
+```
+
+See [EXAMPLES.md](EXAMPLES.md) for more detailed usage examples.
+
 ## API
 
 ### Render Endpoint
@@ -82,43 +108,20 @@ When `responseFormat` is set to `"json"`, the response is:
 }
 ```
 
-## Setup Instructions
+## Integration with Testing Frameworks
 
-### Running with Docker
-
-```bash
-# Build the Docker image
-docker build -t html-renderer .
-
-# Run the service
-docker run -p 3000:3000 html-renderer
-```
-
-### Running Locally
-
-```bash
-# Install dependencies
-yarn
-
-# Start the service
-yarn start
-```
-
-## Usage in Tests
-
-### Direct Image Response
+### Jest with jest-image-snapshot
 
 ```javascript
 const axios = require('axios');
+const { toMatchImageSnapshot } = require('jest-image-snapshot');
+expect.extend({ toMatchImageSnapshot });
 
-it('component renders correctly with direct image response', async () => {
-  // Get component HTML
-  const html = `<div class="card">Product Title</div>`;
-  
+test('component renders correctly', async () => {
   // Call the render service with default responseFormat (image)
-  const response = await axios.post('http://render-service:3000/render', {
-    html,
-    css: `.card { border: 1px solid #ccc; }`,
+  const response = await axios.post('http://localhost:3000/render', {
+    html: '<div class="card">Product Title</div>',
+    css: '.card { border: 1px solid #ccc; }',
     viewport: { width: 500, height: 300 }
   }, {
     responseType: 'arraybuffer' // Important: tell axios to expect binary data
@@ -127,60 +130,10 @@ it('component renders correctly with direct image response', async () => {
   // The response.data is already the image buffer
   const buffer = Buffer.from(response.data);
   
-  // Access metadata from headers
-  const renderTime = response.headers['x-rendering-time'];
-  const screenshotId = response.headers['x-screenshot-id'];
-  
   // Compare with baseline image
   expect(buffer).toMatchImageSnapshot();
 });
 ```
-
-### JSON Response
-
-```javascript
-const axios = require('axios');
-
-it('component renders correctly with JSON response', async () => {
-  // Get component HTML
-  const html = `<div class="card">Product Title</div>`;
-  
-  // Call the render service with JSON responseFormat
-  const response = await axios.post('http://render-service:3000/render', {
-    html,
-    css: `.card { border: 1px solid #ccc; }`,
-    viewport: { width: 500, height: 300 },
-    responseFormat: 'json'
-  });
-  
-  // Extract image data and metadata
-  const { image, metadata } = response.data;
-  
-  // Convert base64 image to buffer
-  const buffer = Buffer.from(image, 'base64');
-  
-  // Access metadata directly
-  console.log(`Rendered in ${metadata.renderingTime}ms using ${metadata.browserVersion}`);
-  
-  // Compare with baseline image
-  expect(buffer).toMatchImageSnapshot();
-});
-```
-
-## Implementation
-
-The service uses Playwright to render HTML in a consistent Chromium environment. The architecture ensures:
-
-1. **Sandboxed Execution**: JavaScript runs in an isolated environment
-2. **Consistent Font Rendering**: Forces standardized text rendering
-3. **Asset Management**: Handles fonts, images, and other resources
-4. **Parallelization**: Capable of handling multiple rendering requests simultaneously
-
-## Security Considerations
-
-- Runs in a sandboxed environment with limited capabilities
-- Implements timeouts to prevent resource exhaustion
-- Validates input to prevent malicious HTML/JavaScript
 
 ## Benefits Over URL-based Approaches
 
@@ -190,9 +143,13 @@ The service uses Playwright to render HTML in a consistent Chromium environment.
 - **Consistent Styling**: Apply specific styles without affecting the entire application
 - **Faster Test Execution**: Eliminates need to navigate to pages before taking screenshots
 
-## Next Steps
+## Security Considerations
 
-- Implement baseline management within the service
-- Add diff visualization tools
-- Support for animations and transitions
-- Automated baseline updates based on approved changes
+- Runs in a sandboxed environment with limited capabilities
+- Implements timeouts to prevent resource exhaustion
+- Validates input to prevent malicious HTML/JavaScript
+
+## Documentation
+
+- [EXAMPLES.md](EXAMPLES.md) - Detailed usage examples with curl and JavaScript
+- [DEVELOPMENT.md](DEVELOPMENT.md) - Information for developers who want to modify or contribute to this service
