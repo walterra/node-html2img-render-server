@@ -32,12 +32,15 @@ app.use(notFound);
 // Error handling middleware
 app.use(errorHandler);
 
-// Start server
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  logger.info(`Server running on port ${PORT}`);
-  console.log(`Server running on port ${PORT}`);
-});
+// Don't start the server if this file is being required by another module (e.g., tests)
+if (require.main === module) {
+  // Start server only when this file is run directly
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    logger.info(`Server running on port ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
+  });
+}
 
 // Handle graceful shutdown
 process.on('SIGTERM', () => {

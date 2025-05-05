@@ -1,5 +1,5 @@
 const { chromium } = require('playwright');
-const piexif = require('piexifjs');
+const { PNG } = require('pngjs');
 const { v4: uuidv4 } = require('uuid');
 const { addAssetsToPage } = require('./assets');
 
@@ -57,38 +57,28 @@ function createHTMLContent(params) {
 }
 
 /**
- * Embeds metadata as EXIF in a PNG image
+ * Embeds metadata in a PNG image using tEXt chunks
  * @param {Buffer} imageBuffer - PNG image buffer
  * @param {Object} metadata - Metadata to embed
  * @returns {Buffer} - PNG with embedded metadata
  */
 function embedMetadataInImage(imageBuffer, metadata) {
   try {
-    // Convert metadata to string and add it to the EXIF UserComment field
+    // Parse the PNG file
+    const png = PNG.sync.read(imageBuffer);
+    
+    // Convert metadata to string
     const metadataStr = JSON.stringify(metadata);
     
-    // Create basic EXIF data structure with only UserComment
-    const exifObj = {
-      "0th": {},
-      "Exif": {
-        [piexif.ExifIFD.UserComment]: metadataStr
-      },
-      "GPS": {},
-      "Interop": {},
-      "1st": {},
-      "thumbnail": null
-    };
+    // Add metadata as a custom text chunk
+    png.text = { metadata: metadataStr };
     
-    // Convert EXIF to binary and insert into image
-    const exifBytes = piexif.dump(exifObj);
-    const dataUri = "data:image/png;base64," + imageBuffer.toString('base64');
-    const newDataUri = piexif.insert(exifBytes, dataUri);
+    // Write the PNG with metadata back to a buffer
+    const resultBuffer = PNG.sync.write(png);
     
-    // Extract base64 data and convert back to buffer
-    const base64Data = newDataUri.replace(/^data:image\/png;base64,/, "");
-    return Buffer.from(base64Data, 'base64');
+    return resultBuffer;
   } catch (error) {
-    console.error('Error embedding metadata:', error);
+    console.error('Error embedding metadata in PNG:', error);
     return imageBuffer; // Return original if embedding fails
   }
 }
