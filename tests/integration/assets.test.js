@@ -215,4 +215,78 @@ describe('Asset Handling', () => {
     const imageBuffer = Buffer.from(response.body.image, 'base64');
     expect(imageBuffer.length).toBeGreaterThan(0);
   }, 20000);
+  
+  test('Should handle multiple different asset types', async () => {
+    // Base64 encoded tiny assets for testing
+    const testPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+    const testJpgBase64 = '/9j/4AAQSkZJRgABAQEAYABgAAD//gA7Q1JFQVRPUjogZ2QtanBlZyB2MS4wICh1c2luZyBJSkcgSlBFRyB2NjIpLCBxdWFsaXR5ID0gOTAK/9sAQwADAgIDAgIDAwMDBAMDBAUIBQUEBAUKBwcGCAwKDAwLCgsLDQ4SEA0OEQ4LCxAWEBETFBUVFQwPFxgWFBgSFBUU/9sAQwEDBAQFBAUJBQUJFA0LDRQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQU/8AAEQgAAQABAwEiAAIRAQMRAf/EAB8AAAEFAQEBAQEBAAAAAAAAAAABAgMEBQYHCAkKC//EALUQAAIBAwMCBAMFBQQEAAABfQECAwAEEQUSITFBBhNRYQcicRQygZGhCCNCscEVUtHwJDNicoIJChYXGBkaJSYnKCkqNDU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6g4SFhoeIiYqSk5SVlpeYmZqio6Slpqeoqaqys7S1tre4ubrCw8TFxsfIycrS09TV1tfY2drh4uPk5ebn6Onq8fLz9PX29/j5+v/EAB8BAAMBAQEBAQEBAQEAAAAAAAABAgMEBQYHCAkKC//EALURAAIBAgQEAwQHBQQEAAECdwABAgMRBAUhMQYSQVEHYXETIjKBCBRCkaGxwQkjM1LwFWJy0QoWJDThJfEXGBkaJicoKSo1Njc4OTpDREVGR0hJSlNUVVZXWFlaY2RlZmdoaWpzdHV2d3h5eoKDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uLj5OXm5+jp6vLz9PX29/j5+v/aAAwDAQACEQMRAD8A+t6AP//Z';
+    const testSvgBase64 = 'PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCI+PHJlY3Qgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIiBmaWxsPSJyZWQiLz48L3N2Zz4=';
+    
+    // Create HTML with multiple assets
+    const html = `
+      <div class="multi-asset-test">
+        <img src="test-png.png" alt="PNG" class="test-image" />
+        <img src="test-jpg.jpg" alt="JPG" class="test-image" />
+        <img src="test-svg.svg" alt="SVG" class="test-image" />
+        <div class="font-text">Multiple Asset Types</div>
+      </div>
+    `;
+    
+    const css = `
+      .multi-asset-test {
+        font-family: 'CustomTestFont', Arial, sans-serif;
+        padding: 20px;
+        background-color: #f5f5f5;
+        width: 300px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+      }
+      .font-text {
+        font-size: 18px;
+        margin-top: 10px;
+      }
+      .test-image {
+        border: 1px solid #ccc;
+        width: 50px;
+        height: 50px;
+        object-fit: contain;
+      }
+    `;
+    
+    // Send request with multiple asset types
+    const response = await request(app)
+      .post('/render')
+      .send({
+        html,
+        css,
+        fonts: [
+          {
+            name: 'CustomTestFont',
+            data: TEST_FONT_BASE64,
+            weight: '400',
+            style: 'normal'
+          }
+        ],
+        assets: {
+          'test-png.png': testPngBase64,
+          'test-jpg.jpg': testJpgBase64,
+          'test-svg.svg': testSvgBase64
+        },
+        viewport: { width: 400, height: 300 },
+        responseFormat: 'json',
+        // Include delay to ensure assets are loaded
+        renderDelay: 100
+      });
+    
+    // Verify response
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toHaveProperty('image');
+    expect(response.body).toHaveProperty('metadata');
+    
+    // Convert base64 to buffer for verification
+    const imageBuffer = Buffer.from(response.body.image, 'base64');
+    expect(imageBuffer.length).toBeGreaterThan(0);
+  }, 20000);
 });

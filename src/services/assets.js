@@ -94,5 +94,6 @@ function getMimeType(filename) {
 }
 
 module.exports = {
-  addAssetsToPage
+  addAssetsToPage,
+  getMimeType
 };
