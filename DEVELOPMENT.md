@@ -59,6 +59,20 @@ yarn test --testPathPattern=tests/render.test.js
 yarn test -u
 ```
 
+### Image Snapshot Testing
+
+This project uses Jest's snapshot testing capabilities with `jest-image-snapshot` to verify that rendered images match expected baselines:
+
+```bash
+# Run image format snapshot tests
+yarn test --testPathPattern=tests/integration/image-format.test.js
+
+# Update image snapshots when intentional changes are made
+yarn test --testPathPattern=tests/integration/image-format.test.js -u
+```
+
+The service tests both PNG and JPEG formats with snapshots to ensure consistent rendering across formats. When working with JPEG snapshots, remember that quality settings affect the visual output and file size.
+
 ## Implementation Details
 
 ### Key Components

@@ -3,9 +3,11 @@
  */
 const request = require('supertest');
 const app = require('../../server');
+const { toMatchImageSnapshot } = require('jest-image-snapshot');
 const {
   parseBinaryResponse,
-  createTestHtml
+  createTestHtml,
+  snapshotConfig
 } = require('../utils/test-utils');
 
 describe('Image Format Options', () => {
@@ -17,6 +19,17 @@ describe('Image Format Options', () => {
     originalApiKey = process.env.API_KEY;
     // Set test API key
     process.env.API_KEY = 'test-api-key';
+    
+    // Configure snapshot settings
+    expect.extend({
+      toMatchImageSnapshot(received) {
+        return toMatchImageSnapshot.call(
+          this,
+          received,
+          snapshotConfig
+        );
+      }
+    });
   });
   
   afterAll(() => {
@@ -24,7 +37,7 @@ describe('Image Format Options', () => {
     process.env.API_KEY = originalApiKey;
   });
 
-  test('Should render using PNG format by default', async () => {
+  test('Should render using PNG format by default and match snapshot', async () => {
     const testFixture = createTestHtml({
       text: 'PNG Format Test',
       color: 'darkblue'
@@ -45,9 +58,12 @@ describe('Image Format Options', () => {
     expect(response.body[1]).toBe(0x50); // P
     expect(response.body[2]).toBe(0x4E); // N
     expect(response.body[3]).toBe(0x47); // G
+    
+    // Verify the image matches the expected snapshot
+    expect(response.body).toMatchImageSnapshot();
   }, 10000);
 
-  test('Should render using JPEG format when specified', async () => {
+  test('Should render using JPEG format when specified and match snapshot', async () => {
     const testFixture = {
       ...createTestHtml({
         text: 'JPEG Format Test',
@@ -69,9 +85,12 @@ describe('Image Format Options', () => {
     // Check JPEG signature (first 2 bytes)
     expect(response.body[0]).toBe(0xFF); // JPEG starts with FF
     expect(response.body[1]).toBe(0xD8); // JPEG SOI marker
+    
+    // Verify the image matches the expected snapshot
+    expect(response.body).toMatchImageSnapshot();
   }, 10000);
 
-  test('Should render JPEG with specified quality', async () => {
+  test('Should render JPEG with specified quality and match snapshots', async () => {
     // Create two requests with different quality settings
     const lowQualityFixture = {
       ...createTestHtml({
@@ -116,6 +135,15 @@ describe('Image Format Options', () => {
 
     // Low quality JPEG should be smaller than high quality
     expect(lowQualityResponse.body.length).toBeLessThan(highQualityResponse.body.length);
+    
+    // Verify the images match their expected snapshots
+    expect(lowQualityResponse.body).toMatchImageSnapshot({
+      customSnapshotIdentifier: 'jpeg-low-quality'
+    });
+    
+    expect(highQualityResponse.body).toMatchImageSnapshot({
+      customSnapshotIdentifier: 'jpeg-high-quality'
+    });
   }, 15000);
   
   test('Should return error for invalid format', async () => {

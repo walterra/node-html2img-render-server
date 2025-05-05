@@ -142,6 +142,42 @@ test('component renders correctly', async () => {
 });
 ```
 
+### Testing Different Image Formats
+
+When testing different image formats (PNG and JPEG), you can use snapshot testing to verify the visual output remains consistent:
+
+```javascript
+test('should render with different formats', async () => {
+  // Test PNG format
+  const pngResponse = await axios.post(`http://localhost:3000/render?apiKey=${apiKey}`, {
+    html: '<div class="card">Product Title</div>',
+    format: 'png' // Explicit format (default is PNG)
+  }, {
+    responseType: 'arraybuffer'
+  });
+  
+  // Test JPEG format with quality setting
+  const jpegResponse = await axios.post(`http://localhost:3000/render?apiKey=${apiKey}`, {
+    html: '<div class="card">Product Title</div>',
+    format: 'jpeg',
+    quality: 90 // Quality setting for JPEG (1-100)
+  }, {
+    responseType: 'arraybuffer'
+  });
+  
+  // Compare both formats against their respective baselines
+  expect(Buffer.from(pngResponse.data)).toMatchImageSnapshot({
+    customSnapshotIdentifier: 'png-format-test'
+  });
+  
+  expect(Buffer.from(jpegResponse.data)).toMatchImageSnapshot({
+    customSnapshotIdentifier: 'jpeg-format-test'
+  });
+});
+```
+
+Note that JPEG format is lossy compression, so snapshot comparisons should account for expected quality differences.
+
 ## Benefits Over URL-based Approaches
 
 - **No Public Endpoints Required**: Test components or pages not publicly accessible
