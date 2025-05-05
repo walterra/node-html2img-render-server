@@ -22,8 +22,7 @@ program
   .option('-h, --host <string>', 'Host to bind the server to', 'localhost')
   .option('-k, --api-key <string>', 'API key for authentication (required in production)')
   .option('-r, --rate-limit <number>', 'Rate limit (requests per minute)', 60)
-  .option('-t, --timeout <number>', 'Request timeout in milliseconds', 30000)
-  .option('--no-open', 'Do not automatically open browser');
+  .option('-t, --timeout <number>', 'Request timeout in milliseconds', 30000);
 
 // Parse command-line arguments
 program.parse(process.argv);
@@ -71,16 +70,6 @@ const server = app.listen(port, host, () => {
   console.log('  -H "Content-Type: application/json" \\');
   console.log('  -d \'{"html": "<div style=\\"padding: 20px; background: blue; color: white;\\">Hello World</div>"}\' \\');
   console.log('  --output test.png');
-  
-  // Open browser automatically unless --no-open was specified
-  if (options.open) {
-    const open = require('open');
-    // Small delay to make sure server is ready
-    setTimeout(() => {
-      console.log('\nOpening example in browser...');
-      open(`${serverUrl}/render?apiKey=${process.env.API_KEY}&html=<div+style="padding:20px;background:blue;color:white">Hello+World</div>`);
-    }, 1000);
-  }
 });
 
 // Handle graceful shutdown

@@ -29,7 +29,6 @@ Options:
   -k, --api-key <string>   API key for authentication (required in production)
   -r, --rate-limit <number>  Rate limit (requests per minute) (default: 60)
   -t, --timeout <number>   Request timeout in milliseconds (default: 30000)
-  --no-open                Do not automatically open browser
   --help                   display help for command
 ```
 
@@ -53,7 +52,6 @@ This will:
 1. Start the server on port 3000
 2. Generate a random API key for development
 3. Display example usage in the console
-4. Open a simple example in your default browser
 
 ### Production Configuration
 
@@ -64,8 +62,7 @@ npx node-html2img-render-server \
   --host 0.0.0.0 \
   --api-key your-secure-api-key \
   --rate-limit 120 \
-  --timeout 60000 \
-  --no-open
+  --timeout 60000
 ```
 
 ## Testing the Render Endpoint
