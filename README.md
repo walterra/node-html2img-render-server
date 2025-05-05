@@ -1,4 +1,4 @@
-# html2img-render-server
+# node-html2img-render-server
 
 A server for converting HTML to images with Playwright - allows direct HTML input and returns screenshots for visual testing.
 
@@ -22,7 +22,7 @@ This service solves the common challenge in visual regression testing where diff
 
 ```bash
 # Run the server directly with npx
-npx html2img-render-server
+npx node-html2img-render-server
 
 # The server will start with a random API key (shown in console)
 # and open a demo page in your browser
@@ -34,10 +34,10 @@ For CLI options and advanced usage, see [CLI.md](CLI.md).
 
 ```bash
 # Pull the image
-docker pull yourorg/html2img-render-server
+docker pull yourorg/node-html2img-render-server
 
 # Run the service
-docker run -p 3000:3000 -e API_KEY=your-api-key yourorg/html2img-render-server
+docker run -p 3000:3000 -e API_KEY=your-api-key yourorg/node-html2img-render-server
 ```
 
 ### Basic Usage

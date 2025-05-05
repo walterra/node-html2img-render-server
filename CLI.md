@@ -1,24 +1,24 @@
-# HTML2IMG CLI Usage
+# NODE-HTML2IMG CLI Usage
 
-The html2img-render-server can be run directly from the command line using `npx` without requiring global installation.
+The node-html2img-render-server can be run directly from the command line using `npx` without requiring global installation.
 
 ## Quick Start
 
 ```bash
 # Run the server with default settings
-npx html2img-render-server
+npx node-html2img-render-server
 
 # Run with a custom port
-npx html2img-render-server --port 8080
+npx node-html2img-render-server --port 8080
 
 # Specify a custom API key
-npx html2img-render-server --api-key your-secret-key
+npx node-html2img-render-server --api-key your-secret-key
 ```
 
 ## Command Line Options
 
 ```
-Usage: html2img-server [options]
+Usage: node-html2img-server [options]
 
 A server for converting HTML to images with Playwright - allows direct HTML input and returns screenshots for visual testing
 
@@ -37,7 +37,7 @@ Options:
 
 In production environments, you must provide an API key either:
 - As a command-line option: `--api-key your-secret-key`
-- As an environment variable: `API_KEY=your-secret-key npx html2img-render-server`
+- As an environment variable: `API_KEY=your-secret-key npx node-html2img-render-server`
 
 In development mode, if no API key is provided, a random key will be generated and displayed in the console output.
 
@@ -46,7 +46,7 @@ In development mode, if no API key is provided, a random key will be generated a
 ### Basic Local Development
 
 ```bash
-npx html2img-render-server
+npx node-html2img-render-server
 ```
 
 This will:
@@ -59,7 +59,7 @@ This will:
 
 ```bash
 # Run with production settings
-npx html2img-render-server \
+npx node-html2img-render-server \
   --port 8080 \
   --host 0.0.0.0 \
   --api-key your-secure-api-key \
@@ -85,7 +85,7 @@ You can use the CLI in scripts and CI/CD pipelines:
 
 ```bash
 # Start server in the background
-npx html2img-render-server --port 8080 --api-key test-key &
+npx node-html2img-render-server --port 8080 --api-key test-key &
 SERVER_PID=$!
 
 # Wait for server to start

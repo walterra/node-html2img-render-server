@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Command-line interface for the html2img-render-server
+ * Command-line interface for the node-html2img-render-server
  * Allows running the server via npx with configuration options
  */
 
@@ -15,7 +15,7 @@ const { logger } = require('../src/middleware/error');
 
 // Define CLI options
 program
-  .name('html2img-server')
+  .name('node-html2img-server')
   .description(description)
   .version(version)
   .option('-p, --port <number>', 'Port to run the server on', 3000)
@@ -63,7 +63,7 @@ const server = app.listen(port, host, () => {
   const serverUrl = `http://${host === '0.0.0.0' ? 'localhost' : host}:${port}`;
   logger.info(`Server running at ${serverUrl}`);
   
-  console.log('\x1b[32m%s\x1b[0m', '✨ html2img server started successfully!');
+  console.log('\x1b[32m%s\x1b[0m', '✨ node-html2img server started successfully!');
   console.log('\x1b[36m%s\x1b[0m', `Server URL: ${serverUrl}`);
   console.log('\x1b[36m%s\x1b[0m', `API Key:    ${process.env.API_KEY}`);
   console.log('\nExample usage:');
