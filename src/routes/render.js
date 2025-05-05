@@ -20,9 +20,21 @@ router.post('/', authenticateApiKey, validatePayload, async (req, res, next) => 
       clipSelector,
       assets,
       fonts,
-      responseFormat = 'image' // 'image' or 'json'
+      responseFormat = 'image', // 'image' or 'json'
+      format = 'png', // 'png' or 'jpeg'
+      quality = 90 // Quality for JPEG format (1-100)
     } = req.body;
 
+    // Validate format
+    if (format && !['png', 'jpeg'].includes(format)) {
+      return next(new ApiError('Format must be either "png" or "jpeg"', 400));
+    }
+    
+    // Validate JPEG quality if provided
+    if (format === 'jpeg' && (quality < 1 || quality > 100)) {
+      return next(new ApiError('JPEG quality must be between 1 and 100', 400));
+    }
+    
     // Render HTML and get screenshot
     const result = await renderHTML({
       html,
@@ -33,7 +45,9 @@ router.post('/', authenticateApiKey, validatePayload, async (req, res, next) => 
       clipSelector,
       assets,
       fonts,
-      embedMetadata: true // Always embed metadata in the image
+      embedMetadata: true, // Always embed metadata in PNG images
+      format,
+      quality
     });
 
     // Determine how to return the response based on requested format

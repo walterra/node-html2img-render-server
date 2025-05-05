@@ -2,7 +2,13 @@
 
 This document provides examples of how to use the HTML Rendering Service with cURL commands.
 
+All examples use the required API key authentication via the `apiKey` query parameter.
+
 ## Basic Usage
+
+### Image Format Options
+
+The service supports both PNG and JPEG output formats. PNG is the default format.
 
 ### Render Simple HTML (Direct Image Response)
 
@@ -99,6 +105,21 @@ curl -i -X POST "http://localhost:3000/render?apiKey=your-api-key" \
 ```
 
 This will show the HTTP headers containing metadata without saving the image.
+
+### Render with JPEG Format
+
+```bash
+curl -X POST "http://localhost:3000/render?apiKey=your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "html": "<div style=\"padding: 20px; background-color: #f0f0f0;\">Hello World</div>",
+    "format": "jpeg",
+    "quality": 80
+  }' \
+  --output hello.jpg
+```
+
+This returns a JPEG image with 80% quality and saves it to hello.jpg.
 
 ## Advanced Features
 

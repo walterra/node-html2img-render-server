@@ -12,6 +12,8 @@ This service solves the common challenge in visual regression testing where diff
 - **Consistent Environment**: Ensures identical rendering across all test runs
 - **Asset Injection**: Support for fonts, images, and other assets
 - **Flexible Screenshot Options**: Configurable viewport, element selection, and waiting conditions
+- **Multiple Image Formats**: Support for both PNG and JPEG output formats
+- **API Key Authentication**: Secure access with API key authentication
 - **Containerized**: Runs in Docker for maximum consistency and portability
 
 ## Quick Start
@@ -72,7 +74,9 @@ See [EXAMPLES.md](EXAMPLES.md) for more detailed usage examples.
       "style": "normal"
     }
   ],
-  "responseFormat": "image"
+  "format": "png",           // "png" or "jpeg" 
+  "quality": 90,             // JPEG quality (1-100)
+  "responseFormat": "image"  // "image" or "json"
 }
 ```
 

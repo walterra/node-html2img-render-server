@@ -98,7 +98,9 @@ async function renderHTML(params) {
     clipSelector,
     assets,
     fonts,
-    embedMetadata = true
+    embedMetadata = true,
+    format = 'png', // 'png' or 'jpeg'
+    quality = 90     // JPEG quality (1-100)
   } = params;
 
   const browser = await getBrowser();
@@ -132,10 +134,15 @@ async function renderHTML(params) {
     const startTime = Date.now();
     
     const screenshotOptions = {
-      type: 'png',
+      type: format === 'jpeg' ? 'jpeg' : 'png',
       fullPage: !clipSelector,
       omitBackground: false
     };
+    
+    // Add quality option for JPEG format
+    if (format === 'jpeg') {
+      screenshotOptions.quality = quality; // Use provided quality or default (90)
+    }
     
     // Clip to selector if specified
     if (clipSelector) {
@@ -173,16 +180,26 @@ async function renderHTML(params) {
       screenshotId
     };
     
-    // Embed metadata in image if requested
-    const finalImageBuffer = embedMetadata ? 
-      embedMetadataInImage(screenshotBuffer, metadata) : 
-      screenshotBuffer;
+    // Embed metadata in image if requested (only for PNG)
+    let finalImageBuffer;
+    if (embedMetadata && format === 'png') {
+      finalImageBuffer = embedMetadataInImage(screenshotBuffer, metadata);
+    } else {
+      finalImageBuffer = screenshotBuffer;
+    }
     
+    // Determine content type based on format
+    const contentType = format === 'jpeg' ? 'image/jpeg' : 'image/png';
+    
+    // We already handled conditional metadata embedding above
+    // So just use the finalImageBuffer that contains the correct version
+    const outputBuffer = finalImageBuffer;
+      
     // Return both image and metadata
     return {
-      imageBuffer: finalImageBuffer,
+      imageBuffer: outputBuffer,
       metadata,
-      contentType: 'image/png'
+      contentType
     };
   } finally {
     if (page) {
