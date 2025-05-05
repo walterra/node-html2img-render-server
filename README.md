@@ -80,10 +80,10 @@ docker run -p 3000:3000 html-renderer
 
 ```bash
 # Install dependencies
-npm install
+yarn
 
 # Start the service
-node server.js
+yarn start
 ```
 
 ## Usage in Tests

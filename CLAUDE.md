@@ -3,11 +3,11 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Build & Run Commands
-- Install dependencies: `npm install`
-- Start service: `npm start` (runs `node server.js`)
-- Run tests: `npm test`
-- Run single test: `npm test -- --testPathPattern=path/to/test`
-- Lint code: `npm run lint`
+- Install dependencies: `yarn`
+- Start service: `yarn start` (runs `node server.js`)
+- Run tests: `yarn test`
+- Run single test: `yarn test --testPathPattern=path/to/test`
+- Lint code: `yarn lint`
 - Build Docker: `docker build -t html-renderer .`
 - Run Docker: `docker run -p 3000:3000 html-renderer`
 

@@ -47,11 +47,11 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Install app dependencies
-COPY package*.json ./
-RUN npm ci --only=production
+COPY package.json yarn.lock* ./
+RUN yarn --frozen-lockfile --production
 
 # Install Playwright browsers
-RUN npx playwright install chromium
+RUN yarn playwright install chromium
 
 # Copy app source
 COPY . .
