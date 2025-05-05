@@ -18,14 +18,26 @@ This service solves the common challenge in visual regression testing where diff
 
 ## Quick Start
 
-### Running with Docker (Recommended)
+### Option 1: Run with npx (No Installation Required)
+
+```bash
+# Run the server directly with npx
+npx html2img-render-server
+
+# The server will start with a random API key (shown in console)
+# and open a demo page in your browser
+```
+
+For CLI options and advanced usage, see [CLI.md](CLI.md).
+
+### Option 2: Running with Docker
 
 ```bash
 # Pull the image
 docker pull yourorg/html2img-render-server
 
 # Run the service
-docker run -p 3000:3000 yourorg/html2img-render-server
+docker run -p 3000:3000 -e API_KEY=your-api-key yourorg/html2img-render-server
 ```
 
 ### Basic Usage
@@ -198,3 +210,4 @@ Note that JPEG format is lossy compression, so snapshot comparisons should accou
 
 - [EXAMPLES.md](EXAMPLES.md) - Detailed usage examples with curl and JavaScript
 - [DEVELOPMENT.md](DEVELOPMENT.md) - Information for developers who want to modify or contribute to this service
+- [CLI.md](CLI.md) - Command-line interface documentation and options

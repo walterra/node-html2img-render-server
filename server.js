@@ -14,8 +14,14 @@ const app = express();
 // Set up security middleware
 app.use(helmet());
 app.use(cors());
-app.use(timeout(30000)); // 30 second timeout
-app.use(rateLimit(60, 60 * 1000)); // 60 requests per minute
+
+// Use configurable timeout and rate limit from environment variables or defaults
+const requestTimeout = parseInt(process.env.REQUEST_TIMEOUT_MS || '30000', 10);
+const rateLimitMax = parseInt(process.env.RATE_LIMIT_MAX || '60', 10);
+const rateLimitWindowMs = parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000', 10);
+
+app.use(timeout(requestTimeout));
+app.use(rateLimit(rateLimitMax, rateLimitWindowMs));
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(morgan('combined', { stream: { write: message => logger.info(message.trim()) } }));

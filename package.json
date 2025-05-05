@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "A server for converting HTML to images with Playwright - allows direct HTML input and returns screenshots for visual testing",
   "main": "server.js",
+  "bin": {
+    "html2img-server": "./bin/html2img.js"
+  },
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
@@ -15,7 +18,9 @@
     "screenshot",
     "visual",
     "regression",
-    "testing"
+    "testing",
+    "cli",
+    "npx"
   ],
   "author": "",
   "license": "MIT",
@@ -28,7 +33,9 @@
     "helmet": "^7.1.0",
     "morgan": "^1.10.0",
     "winston": "^3.11.0",
-    "pngjs": "^7.0.0"
+    "pngjs": "^7.0.0",
+    "commander": "^11.1.0",
+    "open": "^9.1.0"
   },
   "devDependencies": {
     "eslint": "^8.55.0",
