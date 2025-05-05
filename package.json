@@ -35,7 +35,8 @@
     "eslint-config-standard": "^17.1.0",
     "jest": "^29.7.0",
     "nodemon": "^3.0.2",
-    "supertest": "^6.3.3"
+    "supertest": "^6.3.3",
+    "jest-image-snapshot": "^6.2.0"
   },
   "engines": {
     "node": ">=18"
