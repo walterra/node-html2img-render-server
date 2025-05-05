@@ -6,17 +6,19 @@ const app = require('../../server');
 const { createTestHtml } = require('../utils/test-utils');
 
 describe('API Authentication', () => {
-  // Save original env var
-  const originalSkipAuth = process.env.TEST_SKIP_AUTH;
+  // Set up API key for testing
+  let originalApiKey;
   
   beforeAll(() => {
-    // Disable auth skipping for these tests
-    process.env.TEST_SKIP_AUTH = 'false';
+    // Save original API key
+    originalApiKey = process.env.API_KEY;
+    // Set test API key
+    process.env.API_KEY = 'test-api-key';
   });
   
   afterAll(() => {
-    // Restore original setting
-    process.env.TEST_SKIP_AUTH = originalSkipAuth;
+    // Restore original API key
+    process.env.API_KEY = originalApiKey;
   });
   test('Should reject requests without API key', async () => {
     // Create test content

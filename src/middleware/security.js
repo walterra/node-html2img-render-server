@@ -7,11 +7,6 @@ const { ApiError } = require('./error');
  * @param {Function} next - Express next function
  */
 function authenticateApiKey(req, res, next) {
-  // For tests, allow skipping API key validation when TEST_SKIP_AUTH=true
-  if (process.env.NODE_ENV === 'test' && process.env.TEST_SKIP_AUTH === 'true') {
-    return next();
-  }
-  
   const apiKey = req.query.apiKey;
   const expectedApiKey = process.env.API_KEY;
 

@@ -12,9 +12,6 @@ expect.extend({ toMatchImageSnapshot });
 process.env.API_KEY = 'test-api-key';
 process.env.NODE_ENV = 'test';
 
-// For validation tests, we'll skip auth to test validation errors properly
-process.env.TEST_SKIP_AUTH = 'true';
-
 /**
  * Custom request parser for binary responses
  * @param {Object} res - Response object from supertest

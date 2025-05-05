@@ -123,20 +123,14 @@ describe('Input Validation', () => {
     expect(response.headers['content-type']).toBe('image/png');
   });
   
-  test('Should work with TEST_SKIP_AUTH environment variable', async () => {
-    // Temporarily set TEST_SKIP_AUTH to true
-    process.env.TEST_SKIP_AUTH = 'true';
-    
+  test('Should validate with proper API key', async () => {
     const response = await request(app)
-      .post('/render')  // No API key
+      .post('/render?apiKey=' + process.env.API_KEY)
       .send({
         html: '<div>Test</div>'
       });
 
-    // Should pass auth but still validate content
+    // Should pass validation with valid API key and content
     expect(response.statusCode).toBe(200);
-    
-    // Reset the environment variable
-    process.env.TEST_SKIP_AUTH = 'false';
   });
 });
