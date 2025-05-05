@@ -1,15 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const { renderHTML } = require('../services/renderer');
-const { validatePayload } = require('../middleware/security');
+const { validatePayload, authenticateApiKey } = require('../middleware/security');
 const { ApiError } = require('../middleware/error');
 
 /**
  * @route POST /render
  * @description Renders HTML content and returns the screenshot image directly
- * @access Public
+ * @access Private - Requires API key
  */
-router.post('/', validatePayload, async (req, res, next) => {
+router.post('/', authenticateApiKey, validatePayload, async (req, res, next) => {
   try {
     const {
       html,
@@ -73,9 +73,9 @@ router.post('/', validatePayload, async (req, res, next) => {
 /**
  * @route POST /render/metadata
  * @description Extracts and returns metadata from a previously rendered image
- * @access Public
+ * @access Private - Requires API key
  */
-router.post('/metadata', async (req, res, next) => {
+router.post('/metadata', authenticateApiKey, async (req, res, next) => {
   try {
     const { image } = req.body;
     

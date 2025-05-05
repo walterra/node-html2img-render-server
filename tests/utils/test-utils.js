@@ -8,6 +8,13 @@ const { toMatchImageSnapshot } = require('jest-image-snapshot');
 // Extend Jest with custom matchers
 expect.extend({ toMatchImageSnapshot });
 
+// Set a test API key for all tests
+process.env.API_KEY = 'test-api-key';
+process.env.NODE_ENV = 'test';
+
+// For validation tests, we'll skip auth to test validation errors properly
+process.env.TEST_SKIP_AUTH = 'true';
+
 /**
  * Custom request parser for binary responses
  * @param {Object} res - Response object from supertest
@@ -102,10 +109,21 @@ const snapshotConfig = {
   failureThresholdType: 'percent'
 };
 
+/**
+ * Helper function to add API key to request URL
+ * @param {Object} request - Supertest request object
+ * @param {string} path - API endpoint path
+ * @returns {Object} - Request with API key
+ */
+function authenticatedRequest(request, path) {
+  return request(`${path}?apiKey=${process.env.API_KEY}`);
+}
+
 module.exports = {
   parseBinaryResponse,
   extractMetadataFromPng,
   extractMetadataFromHeaders,
   createTestHtml,
-  snapshotConfig
+  snapshotConfig,
+  authenticatedRequest
 };

@@ -64,7 +64,7 @@ describe('Font Rendering Snapshots', () => {
     
     // Perform the request to get the rendered image
     const response = await request(app)
-      .post('/render')
+      .post('/render?apiKey=' + process.env.API_KEY)
       .send({
         html,
         css,

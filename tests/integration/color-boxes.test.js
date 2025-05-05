@@ -39,7 +39,7 @@ describe('Image Snapshots', () => {
     
     // Send request
     const response = await request(app)
-      .post('/render')
+      .post('/render?apiKey=' + process.env.API_KEY)
       .send({
         html,
         css,
@@ -93,7 +93,7 @@ describe('Image Snapshots', () => {
     
     // Send request
     const response = await request(app)
-      .post('/render')
+      .post('/render?apiKey=' + process.env.API_KEY)
       .send({
         html,
         css,
@@ -145,7 +145,7 @@ describe('Image Snapshots', () => {
     
     // Send request
     const response = await request(app)
-      .post('/render')
+      .post('/render?apiKey=' + process.env.API_KEY)
       .send({
         html,
         css,

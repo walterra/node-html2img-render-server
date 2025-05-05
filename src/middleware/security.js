@@ -1,6 +1,37 @@
 const { ApiError } = require('./error');
 
 /**
+ * Authenticates requests using API key
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next function
+ */
+function authenticateApiKey(req, res, next) {
+  // For tests, allow skipping API key validation when TEST_SKIP_AUTH=true
+  if (process.env.NODE_ENV === 'test' && process.env.TEST_SKIP_AUTH === 'true') {
+    return next();
+  }
+  
+  const apiKey = req.query.apiKey;
+  const expectedApiKey = process.env.API_KEY;
+
+  if (!expectedApiKey) {
+    console.error('API_KEY environment variable is not set');
+    return next(new ApiError('Server authentication configuration error', 500));
+  }
+
+  if (!apiKey) {
+    return next(new ApiError('API key is required', 401));
+  }
+
+  if (apiKey !== expectedApiKey) {
+    return next(new ApiError('Invalid API key', 401));
+  }
+
+  next();
+}
+
+/**
  * Validates request payloads
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
@@ -160,5 +191,6 @@ function isSafeUrl(url) {
 module.exports = {
   validatePayload,
   rateLimit,
-  isSafeUrl
+  isSafeUrl,
+  authenticateApiKey
 };

@@ -21,7 +21,7 @@ describe('JSON Response Format', () => {
 
     // Send request to render HTML with JSON response
     const response = await request(app)
-      .post('/render')
+      .post('/render?apiKey=' + process.env.API_KEY)
       .send(requestBody);
 
     // Verify response structure
@@ -66,7 +66,7 @@ describe('JSON Response Format', () => {
 
     // Send request with JSON response format
     const response = await request(app)
-      .post('/render')
+      .post('/render?apiKey=' + process.env.API_KEY)
       .send({
         ...testFixture,
         responseFormat: 'json'

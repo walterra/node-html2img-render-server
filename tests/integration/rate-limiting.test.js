@@ -13,7 +13,7 @@ describe('Rate Limiting', () => {
     // Make a small number of requests that should be under the limit
     for (let i = 0; i < 5; i++) {
       const response = await request(app)
-        .post('/render')
+        .post('/render?apiKey=' + process.env.API_KEY)
         .send(validPayload);
       
       // All requests should succeed
@@ -23,7 +23,7 @@ describe('Rate Limiting', () => {
   
   test('Should include rate limit headers in response', async () => {
     const response = await request(app)
-      .post('/render')
+      .post('/render?apiKey=' + process.env.API_KEY)
       .send(validPayload);
     
     // This test is conditional since we haven't explicitly added these headers 
@@ -48,7 +48,7 @@ describe('Rate Limiting', () => {
     for (let i = 0; i < 70; i++) {
       requests.push(
         request(app)
-          .post('/render')
+          .post('/render?apiKey=' + process.env.API_KEY)
           .send(validPayload)
       );
     }
@@ -70,7 +70,7 @@ describe('Rate Limiting', () => {
   test('Should handle invalid requests properly when rate limiting is active', async () => {
     // Make a request with invalid payload
     const response = await request(app)
-      .post('/render')
+      .post('/render?apiKey=' + process.env.API_KEY)
       .send({
         // Missing required HTML content
         viewport: { width: 800, height: 600 }
@@ -87,7 +87,7 @@ describe('Rate Limiting', () => {
     
     // First check that our real IP can make a request
     const response = await request(app)
-      .post('/render')
+      .post('/render?apiKey=' + process.env.API_KEY)
       .send(validPayload);
     
     expect(response.statusCode).toBe(200);
@@ -96,7 +96,7 @@ describe('Rate Limiting', () => {
     // Note: In reality, this doesn't actually bypass rate limiting in our implementation
     // because supertest doesn't give us a way to truly simulate different IPs
     const responseWithCustomIP = await request(app)
-      .post('/render')
+      .post('/render?apiKey=' + process.env.API_KEY)
       .set('X-Forwarded-For', '192.168.1.2')
       .send(validPayload);
     

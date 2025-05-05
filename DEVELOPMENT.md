@@ -109,6 +109,7 @@ Environment variables that can be set:
 - `RATE_LIMIT_MAX`: Maximum requests per window (default: 60)
 - `RATE_LIMIT_WINDOW_MS`: Rate limit window in milliseconds (default: 60000)
 - `REQUEST_TIMEOUT_MS`: Request timeout in milliseconds (default: 30000)
+- `API_KEY`: Authentication key for API access (required)
 
 ## Extending the Service
 
@@ -135,7 +136,9 @@ Environment variables that can be set:
 
 - Keep the service behind a firewall or API gateway
 - Use HTTPS in production
-- Consider adding authentication for production deployments
+- Always use the API key authentication for all endpoints
+- Keep your API keys secure and rotate them periodically
+- When making API requests, pass the API key as a query parameter: `?apiKey=your-api-key`
 - Regularly update dependencies to address security vulnerabilities
 - Use container security scanning in CI/CD pipelines
 

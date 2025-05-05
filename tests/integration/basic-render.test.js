@@ -6,7 +6,8 @@ const app = require('../../server');
 const {
   parseBinaryResponse,
   createTestHtml,
-  snapshotConfig
+  snapshotConfig,
+  authenticatedRequest
 } = require('../utils/test-utils');
 
 describe('Basic HTML Rendering', () => {
@@ -19,7 +20,7 @@ describe('Basic HTML Rendering', () => {
 
     // Send request to render HTML
     const response = await request(app)
-      .post('/render')
+      .post('/render?apiKey=' + process.env.API_KEY)
       .send(testFixture)
       .buffer()
       .parse(parseBinaryResponse);
@@ -60,7 +61,7 @@ describe('Basic HTML Rendering', () => {
 
     // Send request to render HTML
     const response = await request(app)
-      .post('/render')
+      .post('/render?apiKey=' + process.env.API_KEY)
       .send(testFixture)
       .buffer()
       .parse(parseBinaryResponse);
@@ -90,7 +91,7 @@ describe('Basic HTML Rendering', () => {
 
     // Send request with clipSelector
     const response = await request(app)
-      .post('/render')
+      .post('/render?apiKey=' + process.env.API_KEY)
       .send({
         html,
         clipSelector: '#target',
@@ -123,7 +124,7 @@ describe('Basic HTML Rendering', () => {
 
     // Send request with waitForSelector
     const response = await request(app)
-      .post('/render')
+      .post('/render?apiKey=' + process.env.API_KEY)
       .send({
         html,
         waitForSelector: '#content[style*="display: block"]',

@@ -30,7 +30,7 @@ docker run -p 3000:3000 yourorg/html2img-render-server
 
 ```bash
 # Render HTML to an image
-curl -X POST http://localhost:3000/render \
+curl -X POST "http://localhost:3000/render?apiKey=your-api-key" \
   -H "Content-Type: application/json" \
   -d '{
     "html": "<div style=\"padding: 20px; background-color: #f0f0f0;\">Hello World</div>"
@@ -117,9 +117,12 @@ const axios = require('axios');
 const { toMatchImageSnapshot } = require('jest-image-snapshot');
 expect.extend({ toMatchImageSnapshot });
 
+// API key should be loaded from environment variables
+const apiKey = process.env.RENDER_SERVICE_API_KEY;
+
 test('component renders correctly', async () => {
   // Call the render service with default responseFormat (image)
-  const response = await axios.post('http://localhost:3000/render', {
+  const response = await axios.post(`http://localhost:3000/render?apiKey=${apiKey}`, {
     html: '<div class="card">Product Title</div>',
     css: '.card { border: 1px solid #ccc; }',
     viewport: { width: 500, height: 300 }
@@ -145,9 +148,11 @@ test('component renders correctly', async () => {
 
 ## Security Considerations
 
+- API key authentication required for all endpoints
 - Runs in a sandboxed environment with limited capabilities
 - Implements timeouts to prevent resource exhaustion
 - Validates input to prevent malicious HTML/JavaScript
+- Rate limiting to prevent abuse
 
 ## Documentation
 

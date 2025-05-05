@@ -7,7 +7,7 @@ This document provides examples of how to use the HTML Rendering Service with cU
 ### Render Simple HTML (Direct Image Response)
 
 ```bash
-curl -X POST http://localhost:3000/render \
+curl -X POST "http://localhost:3000/render?apiKey=your-api-key" \
   -H "Content-Type: application/json" \
   -d '{
     "html": "<div style=\"padding: 20px; background-color: #f0f0f0;\">Hello World</div>"
@@ -20,7 +20,7 @@ This returns the PNG image directly and saves it to hello.png. Metadata is embed
 ### Get Image with JSON Response
 
 ```bash
-curl -X POST http://localhost:3000/render \
+curl -X POST "http://localhost:3000/render?apiKey=your-api-key" \
   -H "Content-Type: application/json" \
   -d '{
     "html": "<div style=\"padding: 20px; background-color: #f0f0f0;\">Hello World</div>",
@@ -51,7 +51,7 @@ The response will include the base64-encoded image and metadata:
 ### Extract and Save Image from JSON Response
 
 ```bash
-curl -X POST http://localhost:3000/render \
+curl -X POST "http://localhost:3000/render?apiKey=your-api-key" \
   -H "Content-Type: application/json" \
   -d '{
     "html": "<div style=\"padding: 20px; background-color: #f0f0f0;\">Hello World</div>",
@@ -62,7 +62,7 @@ curl -X POST http://localhost:3000/render \
 ### HTML with Separate CSS
 
 ```bash
-curl -X POST http://localhost:3000/render \
+curl -X POST "http://localhost:3000/render?apiKey=your-api-key" \
   -H "Content-Type: application/json" \
   -d '{
     "html": "<div class=\"card\">Styled Card</div>",
@@ -74,7 +74,7 @@ curl -X POST http://localhost:3000/render \
 ### Custom Viewport Size
 
 ```bash
-curl -X POST http://localhost:3000/render \
+curl -X POST "http://localhost:3000/render?apiKey=your-api-key" \
   -H "Content-Type: application/json" \
   -d '{
     "html": "<div style=\"width: 100%; height: 100%; background: linear-gradient(to right, #ff9966, #ff5e62);\">Gradient Background</div>",
@@ -90,7 +90,7 @@ curl -X POST http://localhost:3000/render \
 ### View Response Headers with Metadata
 
 ```bash
-curl -i -X POST http://localhost:3000/render \
+curl -i -X POST "http://localhost:3000/render?apiKey=your-api-key" \
   -H "Content-Type: application/json" \
   -d '{
     "html": "<div>Simple Element</div>"
@@ -105,7 +105,7 @@ This will show the HTTP headers containing metadata without saving the image.
 ### Wait for Element
 
 ```bash
-curl -X POST http://localhost:3000/render \
+curl -X POST "http://localhost:3000/render?apiKey=your-api-key" \
   -H "Content-Type: application/json" \
   -d '{
     "html": "<div id=\"delayed-content\"></div><script>setTimeout(() => { document.getElementById(\"delayed-content\").innerHTML = \"<h1>Content Loaded!</h1>\"; }, 500);</script>",
@@ -117,7 +117,7 @@ curl -X POST http://localhost:3000/render \
 ### Clip to Element
 
 ```bash
-curl -X POST http://localhost:3000/render \
+curl -X POST "http://localhost:3000/render?apiKey=your-api-key" \
   -H "Content-Type: application/json" \
   -d '{
     "html": "<div style=\"padding: 50px; background-color: lightgray;\"><div id=\"target\" style=\"width: 300px; height: 200px; background-color: coral; padding: 20px;\">Only this element will be captured</div></div>",
@@ -129,7 +129,7 @@ curl -X POST http://localhost:3000/render \
 ### With JavaScript Interaction
 
 ```bash
-curl -X POST http://localhost:3000/render \
+curl -X POST "http://localhost:3000/render?apiKey=your-api-key" \
   -H "Content-Type: application/json" \
   -d '{
     "html": "<button id=\"colorButton\">Click Me</button><div id=\"box\" style=\"width: 200px; height: 200px; background-color: blue;\"></div>",
@@ -141,7 +141,7 @@ curl -X POST http://localhost:3000/render \
 ### With Custom Fonts
 
 ```bash
-curl -X POST http://localhost:3000/render \
+curl -X POST "http://localhost:3000/render?apiKey=your-api-key" \
   -H "Content-Type: application/json" \
   -d '{
     "html": "<h1 style=\"font-family: CustomFont, sans-serif;\">Custom Font Heading</h1>",
@@ -160,7 +160,7 @@ curl -X POST http://localhost:3000/render \
 ### With Image Assets
 
 ```bash
-curl -X POST http://localhost:3000/render \
+curl -X POST "http://localhost:3000/render?apiKey=your-api-key" \
   -H "Content-Type: application/json" \
   -d '{
     "html": "<div><img src=\"logo.png\" alt=\"Logo\" style=\"width: 200px;\"></div>",
@@ -181,8 +181,11 @@ const fs = require('fs');
 
 async function renderAndSaveImage() {
   try {
+    // API key should be loaded from environment variables
+    const apiKey = process.env.RENDER_SERVICE_API_KEY;
+    
     // Request the image directly
-    const response = await axios.post('http://localhost:3000/render', {
+    const response = await axios.post(`http://localhost:3000/render?apiKey=${apiKey}`, {
       html: '<div class="card">Product Title</div>',
       css: '.card { border: 1px solid #ccc; padding: 16px; }'
     }, {
@@ -214,8 +217,11 @@ const fs = require('fs');
 
 async function renderAndExtractData() {
   try {
+    // API key should be loaded from environment variables
+    const apiKey = process.env.RENDER_SERVICE_API_KEY;
+    
     // Request JSON response with image and metadata
-    const response = await axios.post('http://localhost:3000/render', {
+    const response = await axios.post(`http://localhost:3000/render?apiKey=${apiKey}`, {
       html: '<div class="card">Product Title</div>',
       css: '.card { border: 1px solid #ccc; padding: 16px; }',
       responseFormat: 'json'

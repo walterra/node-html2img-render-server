@@ -50,7 +50,7 @@ describe('Asset Handling', () => {
     
     // First, test a simple render without custom fonts as a baseline
     const baselineResponse = await request(app)
-      .post('/render')
+      .post('/render?apiKey=' + process.env.API_KEY)
       .send({
         html,
         css: css.replace("'CustomTestFont', ", ""),
@@ -65,7 +65,7 @@ describe('Asset Handling', () => {
     
     // Now try with the custom font
     const response = await request(app)
-      .post('/render')
+      .post('/render?apiKey=' + process.env.API_KEY)
       .send({
         html,
         css,
@@ -134,7 +134,7 @@ describe('Asset Handling', () => {
     
     // Send request with custom fonts, using JSON format for easier debugging
     const response = await request(app)
-      .post('/render')
+      .post('/render?apiKey=' + process.env.API_KEY)
       .send({
         html,
         css,
@@ -186,7 +186,7 @@ describe('Asset Handling', () => {
     
     // Send request with font and image assets, using JSON format
     const response = await request(app)
-      .post('/render')
+      .post('/render?apiKey=' + process.env.API_KEY)
       .send({
         html,
         css,
@@ -256,7 +256,7 @@ describe('Asset Handling', () => {
     
     // Send request with multiple asset types
     const response = await request(app)
-      .post('/render')
+      .post('/render?apiKey=' + process.env.API_KEY)
       .send({
         html,
         css,

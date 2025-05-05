@@ -23,7 +23,7 @@ describe('Metadata Embedding', () => {
 
     // Send request
     const response = await request(app)
-      .post('/render')
+      .post('/render?apiKey=' + process.env.API_KEY)
       .send(testFixture)
       .buffer()
       .parse(parseBinaryResponse);
@@ -64,7 +64,7 @@ describe('Metadata Embedding', () => {
 
     // Send request
     const response = await request(app)
-      .post('/render')
+      .post('/render?apiKey=' + process.env.API_KEY)
       .send(testFixture)
       .buffer()
       .parse(parseBinaryResponse);
