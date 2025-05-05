@@ -1,0 +1,12 @@
+node_modules
+npm-debug.log
+Dockerfile
+.dockerignore
+.git
+.github
+.gitignore
+README.md
+CLAUDE.md
+.env
+*.log
+public/screenshots/*.png
