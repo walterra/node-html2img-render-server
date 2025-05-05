@@ -11,9 +11,8 @@ const path = require('path');
 const app = require('../../server');
 const { parseBinaryResponse, snapshotConfig } = require('../utils/test-utils');
 
-// Base64 encoded tiny OpenSans font file - truncated for test purposes
-// Only used as placeholder data in requests, not actually rendered
-const TEST_FONT_BASE64 = 'AAEAAAATAQAABAAwRFNJR54SRBwAAahcAAAAAAAA=';
+// Use actual font for testing
+const TEST_FONT_BASE64 = fs.readFileSync(path.join(__dirname, '../fonts/tagesschrift/tagesschrift-base64.txt'), 'utf8');
 
 describe('Asset Handling', () => {
   test('Should render content with a custom font', async () => {
