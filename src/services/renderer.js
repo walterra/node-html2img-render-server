@@ -11,10 +11,16 @@ let browserInstance = null;
  */
 async function getBrowser() {
   if (!browserInstance) {
-    browserInstance = await chromium.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
-    });
+    try {
+      // Try with environment variable for Docker environments
+      process.env.PLAYWRIGHT_BROWSERS_PATH = process.env.PLAYWRIGHT_BROWSERS_PATH || '/home/renderuser/.cache/ms-playwright';
+      browserInstance = await chromium.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+      });
+    } catch (error) {
+      console.error('Error launching browser:', error.message);
+    }
   }
   return browserInstance;
 }
