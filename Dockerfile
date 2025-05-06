@@ -60,9 +60,6 @@ RUN mkdir -p /home/renderuser/.cache && \
 # Copy app source
 COPY . .
 
-# Create screenshots directory
-RUN mkdir -p public/screenshots && chmod -R 755 public/screenshots
-
 # Expose port
 EXPOSE 3000
 
