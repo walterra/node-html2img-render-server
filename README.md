@@ -34,10 +34,10 @@ For CLI options and advanced usage, see [CLI.md](CLI.md).
 
 ```bash
 # Pull the image
-docker pull yourorg/node-html2img-render-server
+docker pull walterra/node-html2img-render-server
 
 # Run the service
-docker run -p 3000:3000 -e API_KEY=your-api-key yourorg/node-html2img-render-server
+docker run -p 3000:3000 -e API_KEY=your-api-key walterra/node-html2img-render-server
 ```
 
 ### Basic Usage
