@@ -108,10 +108,10 @@ The service uses a simple Express.js based architecture:
 
 ```bash
 # Build the Docker image
-docker build -t html-renderer .
+docker build -t node-html2img-render-server .
 
 # Run the Docker container
-docker run -p 3000:3000 -e API_KEY="your-api-key" html-renderer
+docker run -p 3000:3000 -e API_KEY="your-api-key" node-html2img-render-server
 ```
 
 ## Configuration
