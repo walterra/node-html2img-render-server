@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "A server for converting HTML to images with Playwright - allows direct HTML input and returns screenshots for visual testing",
   "main": "server.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/walterra/node-html2img-render-server"
+  },
   "bin": {
     "node-html2img-server": "./bin/html2img.js"
   },
