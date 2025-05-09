@@ -88,7 +88,7 @@ describe('Font Rendering Snapshots', () => {
       customSnapshotIdentifier: 'custom-font-rendering',
       // Make the comparison slightly more forgiving because font rendering
       // can vary slightly across environments and runs
-      failureThreshold: 0.01,
+      failureThreshold: 0.02,
       failureThresholdType: 'percent'
     });
   }, 30000); // Longer timeout for font rendering

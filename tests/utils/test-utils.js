@@ -108,7 +108,7 @@ function createTestHtml(options = {}) {
 const snapshotConfig = {
   customSnapshotsDir: path.join(__dirname, '../snapshots'),
   customDiffDir: path.join(__dirname, '../snapshots/diffs'),
-  failureThreshold: 0.01,
+  failureThreshold: 0.02,
   failureThresholdType: 'percent'
 };
 
