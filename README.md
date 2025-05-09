@@ -15,6 +15,7 @@ This service solves the common challenge in visual regression testing where diff
 - **Multiple Image Formats**: Support for both PNG and JPEG output formats
 - **API Key Authentication**: Secure access with API key authentication
 - **Containerized**: Runs in Docker for maximum consistency and portability
+- **Observability**: OpenTelemetry instrumentation with Elasticsearch support
 
 ## Quick Start
 
@@ -211,3 +212,4 @@ Note that JPEG format is lossy compression, so snapshot comparisons should accou
 - [EXAMPLES.md](EXAMPLES.md) - Detailed usage examples with curl and JavaScript
 - [DEVELOPMENT.md](DEVELOPMENT.md) - Information for developers who want to modify or contribute to this service
 - [CLI.md](CLI.md) - Command-line interface documentation and options
+- [Observability](docs/observability.md) - Details on telemetry, logging, tracing, and Elasticsearch integration

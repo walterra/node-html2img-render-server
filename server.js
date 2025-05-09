@@ -8,6 +8,23 @@ const morgan = require('morgan');
 const { errorHandler, notFound, timeout, logger } = require('./src/middleware/error');
 const { rateLimit } = require('./src/middleware/security');
 
+// Import telemetry service
+const { initTelemetry } = require('./src/services/telemetry');
+
+// Initialize telemetry with Elasticsearch support
+const telemetryEnabled = process.env.ENABLE_TELEMETRY !== 'false';
+if (telemetryEnabled) {
+  // Configure telemetry with environment variables
+  initTelemetry({
+    serviceName: process.env.OTEL_SERVICE_NAME || 'html-render-service',
+    serviceVersion: process.env.npm_package_version || '1.0.1',
+    environment: process.env.NODE_ENV || 'development',
+    otlpEndpoint: process.env.OTLP_ENDPOINT || 'http://localhost:4318',
+    samplingRatio: parseFloat(process.env.OTEL_TRACES_SAMPLER_ARG || '1.0')
+  });
+  logger.info('Telemetry initialized with Elasticsearch support');
+}
+
 // Initialize Express app
 const app = express();
 
@@ -49,15 +66,37 @@ if (require.main === module) {
 }
 
 // Handle graceful shutdown
-process.on('SIGTERM', () => {
+process.on('SIGTERM', async () => {
   logger.info('SIGTERM received, shutting down gracefully');
+
   // Close any resources here if needed
+  if (telemetryEnabled) {
+    const { shutdownTelemetry } = require('./src/services/telemetry');
+    try {
+      await shutdownTelemetry();
+      logger.info('Telemetry shutdown completed');
+    } catch (error) {
+      logger.error('Error shutting down telemetry:', error);
+    }
+  }
+
   process.exit(0);
 });
 
-process.on('SIGINT', () => {
+process.on('SIGINT', async () => {
   logger.info('SIGINT received, shutting down gracefully');
+
   // Close any resources here if needed
+  if (telemetryEnabled) {
+    const { shutdownTelemetry } = require('./src/services/telemetry');
+    try {
+      await shutdownTelemetry();
+      logger.info('Telemetry shutdown completed');
+    } catch (error) {
+      logger.error('Error shutting down telemetry:', error);
+    }
+  }
+
   process.exit(0);
 });
 
