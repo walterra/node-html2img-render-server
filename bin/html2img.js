@@ -60,14 +60,16 @@ const host = options.host;
 const server = app.listen(port, host, () => {
   const serverUrl = `http://${host === '0.0.0.0' ? 'localhost' : host}:${port}`;
   logger.info(`Server running at ${serverUrl}`);
-  
+
   console.log('\x1b[32m%s\x1b[0m', '✨ node-html2img server started successfully!');
   console.log('\x1b[36m%s\x1b[0m', `Server URL: ${serverUrl}`);
   console.log('\x1b[36m%s\x1b[0m', `API Key:    ${process.env.API_KEY}`);
   console.log('\nExample usage:');
   console.log(`  curl -X POST "${serverUrl}/render?apiKey=${process.env.API_KEY}" \\`);
   console.log('  -H "Content-Type: application/json" \\');
-  console.log('  -d \'{"html": "<div style=\\"padding: 20px; background: blue; color: white;\\">Hello World</div>"}\' \\');
+  console.log(
+    '  -d \'{"html": "<div style=\\"padding: 20px; background: blue; color: white;\\">Hello World</div>"}\' \\'
+  );
   console.log('  --output test.png');
 });
 
@@ -78,7 +80,7 @@ const shutdown = () => {
     console.log('\x1b[32m%s\x1b[0m', 'Server shutdown complete.');
     // Close the server without calling process.exit
   });
-  
+
   // Force exit after 5 seconds if server hasn't closed
   setTimeout(() => {
     console.log('\x1b[31m%s\x1b[0m', 'Server shutdown timed out, forcing exit.');

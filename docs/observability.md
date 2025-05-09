@@ -30,12 +30,12 @@ To set up your environment variables:
 
 Available configuration variables:
 
-| Variable                    | Description                              | Default                       |
-| --------------------------- | ---------------------------------------- | ----------------------------- |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | OpenTelemetry collector endpoint       | (requires configuration)      |
-| `OTEL_EXPORTER_OTLP_HEADERS`  | Headers for authentication (e.g., API key) | (requires configuration)  |
-| `OTEL_SERVICE_NAME`         | Service name for telemetry reporting     | `node-html2img-render-server` |
-| `NODE_ENV`                  | Environment (production, dev)            | `development`                 |
+| Variable                      | Description                                | Default                       |
+| ----------------------------- | ------------------------------------------ | ----------------------------- |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | OpenTelemetry collector endpoint           | (requires configuration)      |
+| `OTEL_EXPORTER_OTLP_HEADERS`  | Headers for authentication (e.g., API key) | (requires configuration)      |
+| `OTEL_SERVICE_NAME`           | Service name for telemetry reporting       | `node-html2img-render-server` |
+| `NODE_ENV`                    | Environment (production, dev)              | `development`                 |
 
 ## Setting Up with Elastic Cloud
 
@@ -44,10 +44,12 @@ Available configuration variables:
 Setting up with Elastic Cloud is now simplified:
 
 1. **Obtain your APM server details from Elastic Cloud console**:
+
    - OTLP endpoint URL
    - API key for authorization
 
 2. **Configure the HTML Render Service**:
+
    ```bash
    # Add to your .env file
    OTEL_SERVICE_NAME=node-html2img-render-server
@@ -61,6 +63,7 @@ Setting up with Elastic Cloud is now simplified:
 ### Finding Your Elastic Cloud APM Details
 
 1. **Find your OTLP Endpoint URL**:
+
    - Log in to your Elastic Cloud console
    - Navigate to your deployment
    - Click on "APM & Fleet" in the sidebar
@@ -171,11 +174,13 @@ The configuration is based on standard OpenTelemetry environment variables:
 The service includes robust error handling for telemetry issues:
 
 1. **Startup Validation**
+
    - Required environment variables are checked at server startup
    - Invalid configuration is detected and clearly reported
    - The service logs detailed error messages about any configuration issues
 
 2. **Runtime Fallback**
+
    - If telemetry encounters errors during rendering, the service will retry without telemetry
    - Rendering operations continue to work even if telemetry fails
    - Headers indicate telemetry status with `X-Telemetry-Status: failed` when fallback occurs
@@ -195,12 +200,12 @@ const { trace } = require('@opentelemetry/api');
 // Get the current active span
 const span = trace.getActiveSpan();
 if (span) {
-  span.setAttribute("custom.attribute", "value");
+  span.setAttribute('custom.attribute', 'value');
 }
 
 // Create a custom span for a specific operation
 const tracer = trace.getTracer('my-service');
-await tracer.startActiveSpan('custom.operation', async (span) => {
+await tracer.startActiveSpan('custom.operation', async span => {
   try {
     // Operation code here
   } finally {

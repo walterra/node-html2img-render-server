@@ -4,11 +4,7 @@ module.exports = {
   collectCoverage: true,
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov'],
-  collectCoverageFrom: [
-    'src/**/*.js',
-    '!**/node_modules/**',
-    '!**/coverage/**'
-  ],
+  collectCoverageFrom: ['src/**/*.js', '!**/node_modules/**', '!**/coverage/**'],
   verbose: true,
-  testTimeout: 15000, // Increase timeout for tests that involve rendering
+  testTimeout: 15000 // Increase timeout for tests that involve rendering
 };

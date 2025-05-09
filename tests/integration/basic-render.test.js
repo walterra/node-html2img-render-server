@@ -3,11 +3,7 @@
  */
 const request = require('supertest');
 const app = require('../../server');
-const {
-  parseBinaryResponse,
-  createTestHtml,
-  snapshotConfig
-} = require('../utils/test-utils');
+const { parseBinaryResponse, createTestHtml, snapshotConfig } = require('../utils/test-utils');
 
 describe('Basic HTML Rendering', () => {
   test('Should render HTML and return image data directly', async () => {

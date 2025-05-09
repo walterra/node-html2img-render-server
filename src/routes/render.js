@@ -37,7 +37,6 @@ router.post('/', authenticateApiKey, validatePayload, async (req, res, next) => 
       return next(error);
     }
 
-
     // Render HTML and get screenshot
     const result = await renderHTML({
       html,
@@ -52,7 +51,6 @@ router.post('/', authenticateApiKey, validatePayload, async (req, res, next) => 
       format,
       quality
     });
-
 
     // Determine how to return the response based on requested format
     if (responseFormat === 'json') {

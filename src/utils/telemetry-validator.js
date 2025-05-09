@@ -28,8 +28,8 @@ function validateOtelConfig() {
 
   // Check for required environment variables
   const requiredVars = {
-    'OTEL_SERVICE_NAME': 'Service name for telemetry identification',
-    'OTEL_EXPORTER_OTLP_ENDPOINT': 'OpenTelemetry collector endpoint'
+    OTEL_SERVICE_NAME: 'Service name for telemetry identification',
+    OTEL_EXPORTER_OTLP_ENDPOINT: 'OpenTelemetry collector endpoint'
   };
 
   const missingVars = [];
@@ -48,7 +48,9 @@ function validateOtelConfig() {
     try {
       const url = new URL(process.env.OTEL_EXPORTER_OTLP_ENDPOINT);
       if (!['http:', 'https:'].includes(url.protocol)) {
-        errors.push(`Invalid OTEL_EXPORTER_OTLP_ENDPOINT protocol: ${url.protocol}. Must be http: or https:`);
+        errors.push(
+          `Invalid OTEL_EXPORTER_OTLP_ENDPOINT protocol: ${url.protocol}. Must be http: or https:`
+        );
       }
     } catch (error) {
       errors.push(`Invalid OTEL_EXPORTER_OTLP_ENDPOINT URL format: ${error.message}`);
@@ -57,7 +59,9 @@ function validateOtelConfig() {
 
   // Check for optional but recommended variables
   if (process.env.OTEL_EXPORTER_OTLP_ENDPOINT && !process.env.OTEL_EXPORTER_OTLP_HEADERS) {
-    warnings.push('Warning: OTEL_EXPORTER_OTLP_HEADERS is not set - this might cause authentication failures with your collector endpoint');
+    warnings.push(
+      'Warning: OTEL_EXPORTER_OTLP_HEADERS is not set - this might cause authentication failures with your collector endpoint'
+    );
   }
 
   // Validate headers format if provided
@@ -68,7 +72,9 @@ function validateOtelConfig() {
       const invalidParts = headerParts.filter(part => !part.includes('='));
 
       if (invalidParts.length > 0) {
-        warnings.push(`Invalid OTEL_EXPORTER_OTLP_HEADERS format. Each header must be in "key=value" format, separated by commas.`);
+        warnings.push(
+          `Invalid OTEL_EXPORTER_OTLP_HEADERS format. Each header must be in "key=value" format, separated by commas.`
+        );
       }
     } catch (error) {
       warnings.push(`Error parsing OTEL_EXPORTER_OTLP_HEADERS: ${error.message}`);

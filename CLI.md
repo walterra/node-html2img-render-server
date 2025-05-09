@@ -35,6 +35,7 @@ Options:
 ## API Key Authentication
 
 In production environments, you must provide an API key either:
+
 - As a command-line option: `--api-key your-secret-key`
 - As an environment variable: `API_KEY=your-secret-key npx node-html2img-render-server`
 
@@ -49,6 +50,7 @@ npx node-html2img-render-server
 ```
 
 This will:
+
 1. Start the server on port 3000
 2. Generate a random API key for development
 3. Display example usage in the console
@@ -103,6 +105,7 @@ kill $SERVER_PID
 The CLI also supports configuration through environment variables:
 
 ### Service Configuration
+
 - `API_KEY`: Authentication key
 - `PORT`: Server port
 - `RATE_LIMIT_MAX`: Maximum requests per minute
@@ -110,6 +113,7 @@ The CLI also supports configuration through environment variables:
 - `REQUEST_TIMEOUT_MS`: Request timeout in milliseconds
 
 ### OpenTelemetry Configuration
+
 - `OTEL_SERVICE_NAME`: Service name for telemetry reporting
 - `OTEL_EXPORTER_OTLP_ENDPOINT`: OpenTelemetry collector endpoint
 - `OTEL_EXPORTER_OTLP_HEADERS`: Headers for OTLP endpoint authentication

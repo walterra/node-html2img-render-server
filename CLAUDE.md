@@ -3,6 +3,7 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Build & Run Commands
+
 - Install dependencies: `yarn`
 - Start service: `yarn start` (runs `node --env-file=./.env -r @elastic/opentelemetry-node server.js`)
 - Development mode: `yarn dev` (runs with nodemon for auto-restart)
@@ -14,6 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Run Docker: `docker run -p 3000:3000 -e API_KEY=your-api-key html-renderer`
 
 ## Project Architecture
+
 This service renders HTML to images using Playwright's headless browser:
 
 1. **Express Server**: Handles HTTP requests, authentication, and validation
@@ -22,6 +24,7 @@ This service renders HTML to images using Playwright's headless browser:
 4. **OpenTelemetry**: Provides observability for metrics, traces and logs
 
 ### Key Files/Directories:
+
 - `server.js`: Express server setup and configuration
 - `src/routes/render.js`: Main API endpoint for HTML rendering
 - `src/services/renderer.js`: Core rendering functionality with Playwright
@@ -30,6 +33,7 @@ This service renders HTML to images using Playwright's headless browser:
 - `tests/`: Integration and unit tests
 
 ## Environment Configuration
+
 The service uses a `.env` file for configuration:
 
 ```
@@ -48,21 +52,25 @@ OTEL_EXPORTER_OTLP_HEADERS=Authorization=ApiKey your-api-key
 ```
 
 ## Testing Workflow
+
 1. Integration tests use supertest and jest-image-snapshot
 2. Tests generate image snapshots for comparison in `/tests/snapshots/`
 3. API authentication is mocked with environment variables
 
 To run the test suite:
+
 ```
 API_KEY=test-key yarn test
 ```
 
 When adding a new feature:
+
 1. Create new test cases in `tests/integration/` or `tests/unit/`
 2. Generate new snapshots with `yarn test -u`
 3. Verify snapshots match expected output
 
 ## Rendering Flow
+
 1. Express route receives HTML+CSS+JS content
 2. Security middleware validates and sanitizes input
 3. Renderer starts Playwright browser instance
@@ -72,6 +80,7 @@ When adding a new feature:
 7. Image is returned to caller
 
 ## Observability
+
 OpenTelemetry is used for monitoring and is automatically loaded at startup:
 
 - Uses `@elastic/opentelemetry-node` for auto-instrumentation
@@ -79,13 +88,16 @@ OpenTelemetry is used for monitoring and is automatically loaded at startup:
 - See `docs/observability.md` for complete setup details
 
 ## API Integration Patterns
+
 When calling the service:
+
 1. POST HTML content to `/render?apiKey=your-key`
 2. Specify viewport, wait conditions, and clip options if needed
 3. Choose `responseFormat` as "image" or "json"
 4. Parse response headers for metadata or use JSON response
 
 ## Code Style Guidelines
+
 - **Formatting**: Follow JavaScript Standard Style
 - **Imports**: Group imports by external packages, internal modules, then types
 - **Error Handling**: Use structured error objects via `ApiError` class

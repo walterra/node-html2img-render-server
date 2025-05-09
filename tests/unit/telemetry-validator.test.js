@@ -23,7 +23,7 @@ describe('Telemetry Validator', () => {
 
   test('Should detect missing required configuration', () => {
     const result = validateOtelConfig();
-    
+
     expect(result.isValid).toBe(false);
     expect(result.messages.length).toBeGreaterThan(0);
     // Should check for both service name and endpoint
@@ -35,9 +35,9 @@ describe('Telemetry Validator', () => {
     process.env.OTEL_SERVICE_NAME = 'test-service';
     process.env.OTEL_EXPORTER_OTLP_ENDPOINT = 'https://example.com:4317';
     process.env.OTEL_EXPORTER_OTLP_HEADERS = 'Authorization=ApiKey test';
-    
+
     const result = validateOtelConfig();
-    
+
     expect(result.isValid).toBe(true);
     expect(result.hasWarnings).toBe(false);
     expect(result.messages.length).toBe(0);
@@ -46,9 +46,9 @@ describe('Telemetry Validator', () => {
   test('Should warn when authentication headers are missing', () => {
     process.env.OTEL_SERVICE_NAME = 'test-service';
     process.env.OTEL_EXPORTER_OTLP_ENDPOINT = 'https://example.com:4317';
-    
+
     const result = validateOtelConfig();
-    
+
     expect(result.isValid).toBe(true);
     expect(result.hasWarnings).toBe(true);
     expect(result.messages.length).toBeGreaterThan(0);
@@ -64,7 +64,8 @@ describe('Telemetry Validator', () => {
     expect(result.isValid).toBe(false);
     // Find the message about invalid URL format
     const invalidUrlMessage = result.messages.find(msg =>
-      msg.includes('Invalid OTEL_EXPORTER_OTLP_ENDPOINT URL format'));
+      msg.includes('Invalid OTEL_EXPORTER_OTLP_ENDPOINT URL format')
+    );
     expect(invalidUrlMessage).toBeDefined();
   });
 
@@ -77,7 +78,8 @@ describe('Telemetry Validator', () => {
     expect(result.isValid).toBe(false);
     // Find the message about invalid protocol
     const invalidProtocolMessage = result.messages.find(msg =>
-      msg.includes('Invalid OTEL_EXPORTER_OTLP_ENDPOINT protocol'));
+      msg.includes('Invalid OTEL_EXPORTER_OTLP_ENDPOINT protocol')
+    );
     expect(invalidProtocolMessage).toBeDefined();
   });
 
@@ -85,9 +87,9 @@ describe('Telemetry Validator', () => {
     process.env.OTEL_SERVICE_NAME = 'test-service';
     process.env.OTEL_EXPORTER_OTLP_ENDPOINT = 'https://example.com:4317';
     process.env.OTEL_EXPORTER_OTLP_HEADERS = 'invalid-format';
-    
+
     const result = validateOtelConfig();
-    
+
     expect(result.isValid).toBe(true); // Headers are optional
     expect(result.hasWarnings).toBe(true);
     expect(result.messages.length).toBeGreaterThan(0);
@@ -96,9 +98,9 @@ describe('Telemetry Validator', () => {
 
   test('Should handle disabled OpenTelemetry', () => {
     process.env.OTEL_SDK_DISABLED = 'true';
-    
+
     const result = validateOtelConfig();
-    
+
     expect(result.isValid).toBe(true);
     expect(result.hasWarnings).toBe(true);
     expect(result.messages.length).toBeGreaterThan(0);
