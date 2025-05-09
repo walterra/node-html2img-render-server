@@ -105,3 +105,11 @@ When calling the service:
 - **Async**: Use async/await over promise chains
 - **Security**: Sanitize HTML input, validate request parameters
 - **Comments**: Document complex logic, API parameters, and return values
+- **Writing Style**: Keep a neutral tone, avoid excessive use of adjectives
+
+Details on writing style:
+
+- Avoid emotional language like "We're excited to announce"
+- Avoid adjectives like "comprehensive", "robust", "seamless", etc.
+- Use more direct statements instead of flowery descriptions
+- Keeping technical information clear and concise

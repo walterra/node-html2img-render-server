@@ -5,17 +5,12 @@ All notable changes to the node-html2img-render-server project will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.1.0] - 2025-05-09
 
 ### Added
 
-- OpenTelemetry support in Docker configuration
-- Environment variables for telemetry in Dockerfile (OTEL_SERVICE_NAME, etc.)
-
-### Changed
-
-- Updated Docker CMD to use OpenTelemetry preload
-- Improved documentation for Docker deployment with OpenTelemetry
+- OpenTelemetry integration using `@elastic/opentelemetry-node`
+- Chore: Added eslint/prettier (c29c829)
 
 ## [1.0.1] - 2025-05-06
 
