@@ -37,8 +37,6 @@ router.post('/', authenticateApiKey, validatePayload, async (req, res, next) => 
       return next(error);
     }
 
-    // Start render timing
-    const requestStartTime = Date.now();
 
     // Render HTML and get screenshot
     const result = await renderHTML({
@@ -55,8 +53,6 @@ router.post('/', authenticateApiKey, validatePayload, async (req, res, next) => 
       quality
     });
 
-    // Calculate total request duration
-    const requestDuration = Date.now() - requestStartTime;
 
     // Determine how to return the response based on requested format
     if (responseFormat === 'json') {

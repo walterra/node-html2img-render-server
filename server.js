@@ -86,13 +86,13 @@ if (require.main === module) {
 process.on("SIGTERM", async () => {
   logger.info("SIGTERM received, shutting down gracefully");
 
-  process.exit(0);
+  // Graceful shutdown without explicit exit
 });
 
 process.on("SIGINT", async () => {
   logger.info("SIGINT received, shutting down gracefully");
 
-  process.exit(0);
+  // Graceful shutdown without explicit exit
 });
 
 module.exports = app;

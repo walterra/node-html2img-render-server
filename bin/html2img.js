@@ -6,7 +6,6 @@
  */
 
 const { program } = require('commander');
-const path = require('path');
 const { version, description } = require('../package.json');
 
 // Load the server application
@@ -34,7 +33,7 @@ if (options.apiKey) {
 } else if (process.env.NODE_ENV === 'production') {
   console.error('\x1b[31m%s\x1b[0m', 'ERROR: API_KEY is required in production mode.');
   console.error('Use --api-key option or set the API_KEY environment variable.');
-  process.exit(1);
+  throw new Error('API_KEY is required in production mode');
 } else if (!process.env.API_KEY) {
   // Generate a random API key for development
   const randomApiKey = 'dev-' + Math.random().toString(36).substring(2, 15);
@@ -77,13 +76,13 @@ const shutdown = () => {
   console.log('\n\x1b[33m%s\x1b[0m', 'Shutting down server...');
   server.close(() => {
     console.log('\x1b[32m%s\x1b[0m', 'Server shutdown complete.');
-    process.exit(0);
+    // Close the server without calling process.exit
   });
   
   // Force exit after 5 seconds if server hasn't closed
   setTimeout(() => {
     console.log('\x1b[31m%s\x1b[0m', 'Server shutdown timed out, forcing exit.');
-    process.exit(1);
+    throw new Error('Server shutdown timed out');
   }, 5000);
 };
 

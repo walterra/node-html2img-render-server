@@ -6,8 +6,7 @@ const app = require('../../server');
 const {
   parseBinaryResponse,
   createTestHtml,
-  snapshotConfig,
-  authenticatedRequest
+  snapshotConfig
 } = require('../utils/test-utils');
 
 describe('Basic HTML Rendering', () => {

@@ -65,7 +65,7 @@ describe('Browser Cleanup', () => {
     const mockContext = await mockBrowser.newContext();
     const mockPage = await mockContext.newPage();
 
-    const result = await renderHTML({
+    await renderHTML({
       html: '<div>Test</div>',
       viewport: { width: 800, height: 600 }
     });

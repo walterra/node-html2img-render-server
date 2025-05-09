@@ -41,7 +41,6 @@ describe('Asset Service', () => {
 
   describe('addAssetsToPage', () => {
     let page, route;
-    const mockBuffer = Buffer.from('test');
 
     beforeEach(() => {
       // Mock for Playwright page object

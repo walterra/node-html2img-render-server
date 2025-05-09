@@ -228,12 +228,12 @@ async function closeBrowser() {
 // Handle graceful shutdown
 process.on('SIGTERM', async () => {
   await closeBrowser();
-  process.exit(0);
+  // Let the process terminate naturally
 });
 
 process.on('SIGINT', async () => {
   await closeBrowser();
-  process.exit(0);
+  // Let the process terminate naturally
 });
 
 module.exports = {

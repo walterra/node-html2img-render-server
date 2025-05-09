@@ -9,7 +9,7 @@ const request = require('supertest');
 const fs = require('fs');
 const path = require('path');
 const app = require('../../server');
-const { parseBinaryResponse, snapshotConfig } = require('../utils/test-utils');
+const { parseBinaryResponse } = require('../utils/test-utils');
 
 // Use actual font for testing
 const TEST_FONT_BASE64 = fs.readFileSync(
