@@ -113,8 +113,16 @@ The service uses a simple Express.js based architecture:
 # Build the Docker image
 docker build -t node-html2img-render-server .
 
-# Run the Docker container
+# Run the Docker container (without telemetry)
 docker run -p 3000:3000 -e API_KEY="your-api-key" node-html2img-render-server
+
+# Run with OpenTelemetry for observability
+docker run -p 3000:3000 \
+  -e API_KEY="your-api-key" \
+  -e OTEL_SERVICE_NAME="node-html2img-render-server" \
+  -e OTEL_EXPORTER_OTLP_ENDPOINT="your-otlp-endpoint" \
+  -e OTEL_EXPORTER_OTLP_HEADERS="Authorization=ApiKey your-api-key" \
+  node-html2img-render-server
 ```
 
 ## Configuration
@@ -132,7 +140,10 @@ Environment variables that can be set:
 
 - `OTEL_SERVICE_NAME`: Service name for telemetry reporting
 - `OTEL_EXPORTER_OTLP_ENDPOINT`: OpenTelemetry collector endpoint (required for telemetry)
-- `OTEL_EXPORTER_OTLP_HEADERS`: Headers for OTLP endpoint authentication
+- `OTEL_EXPORTER_OTLP_HEADERS`: Headers for OTLP endpoint authentication (format: `Authorization=ApiKey your-api-key`)
+- `OTEL_SDK_DISABLED`: Set to `true` to explicitly disable telemetry
+
+The service automatically loads the OpenTelemetry instrumentation at startup via the `-r @elastic/opentelemetry-node` flag. For Docker deployments, all telemetry settings can be passed as environment variables.
 
 ## Extending the Service
 
@@ -164,6 +175,79 @@ Environment variables that can be set:
 - When making API requests, pass the API key as a query parameter: `?apiKey=your-api-key`
 - Regularly update dependencies to address security vulnerabilities
 - Use container security scanning in CI/CD pipelines
+
+## Release Process
+
+### Publishing a New Version
+
+1. Update version in `package.json`
+2. Update the CHANGELOG.md with the new version details
+3. Commit changes and tag the release:
+   ```bash
+   git add .
+   git commit -m "Release v1.x.x"
+   git tag v1.x.x
+   git push origin main --tags
+   ```
+4. Publish to npm:
+   ```bash
+   npm publish
+   ```
+
+### Publishing Docker Images
+
+When releasing a new version, update and publish the Docker image:
+
+1. **Log in to Docker Hub**:
+
+   ```bash
+   # Authenticate with Docker Hub
+   docker login
+   # Enter your Docker Hub username and password when prompted
+   ```
+
+2. **Build for the current architecture**:
+
+   ```bash
+   # Build with version tag
+   docker build -t walterra/node-html2img-render-server:1.x.x .
+   docker tag walterra/node-html2img-render-server:1.x.x walterra/node-html2img-render-server:latest
+
+   # Push to Docker Hub
+   docker push walterra/node-html2img-render-server:1.x.x
+   docker push walterra/node-html2img-render-server:latest
+   ```
+
+3. **Build for multiple architectures with Docker Buildx** (recommended):
+
+   ```bash
+   # Set up buildx if not already configured
+   docker buildx create --name mybuilder --driver docker-container --use
+
+   # Build and push for multiple platforms in one command
+   docker buildx build --platform linux/amd64,linux/arm64 \
+     -t walterra/node-html2img-render-server:1.x.x \
+     -t walterra/node-html2img-render-server:latest \
+     --push .
+   ```
+
+4. **Verify the image**:
+
+   ```bash
+   # Pull and test the image
+   docker pull walterra/node-html2img-render-server:1.x.x
+   docker run -p 3000:3000 -e API_KEY="test-key" walterra/node-html2img-render-server:1.x.x
+
+   # Test a simple rendering request
+   curl -X POST -H "Content-Type: application/json" \
+     -H "X-API-Key: test-key" \
+     -d '{"html":"<div style=\"background:blue;width:100px;height:100px;\"></div>"}' \
+     http://localhost:3000/render -o test.png
+   ```
+
+5. **Update documentation**:
+   - Update README.md with the latest Docker image version
+   - Ensure the release notes mention the new Docker image
 
 ## Next Steps and Roadmap
 
