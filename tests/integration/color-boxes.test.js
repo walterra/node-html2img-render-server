@@ -15,7 +15,7 @@ describe('Image Snapshots', () => {
         <div class="color-box blue"></div>
       </div>
     `;
-    
+
     const css = `
       .snapshot-test {
         display: flex;
@@ -36,7 +36,7 @@ describe('Image Snapshots', () => {
       .green { background-color: #55ff55; }
       .blue { background-color: #5555ff; }
     `;
-    
+
     // Send request
     const response = await request(app)
       .post('/render?apiKey=' + process.env.API_KEY)
@@ -47,11 +47,11 @@ describe('Image Snapshots', () => {
       })
       .buffer()
       .parse(parseBinaryResponse);
-    
+
     // Verify response
     expect(response.statusCode).toBe(200);
     expect(Buffer.isBuffer(response.body)).toBe(true);
-    
+
     // Compare with baseline image - this will create a baseline on first run
     // or compare with the baseline on subsequent runs
     expect(response.body).toMatchImageSnapshot({
@@ -69,7 +69,7 @@ describe('Image Snapshots', () => {
         <div class="color-box box3"></div>
       </div>
     `;
-    
+
     const css = `
       .snapshot-test {
         display: flex;
@@ -90,7 +90,7 @@ describe('Image Snapshots', () => {
       .box2 { background-color: #aaffaa; }
       .box3 { background-color: #aaaaff; }
     `;
-    
+
     // Send request
     const response = await request(app)
       .post('/render?apiKey=' + process.env.API_KEY)
@@ -101,11 +101,11 @@ describe('Image Snapshots', () => {
       })
       .buffer()
       .parse(parseBinaryResponse);
-    
+
     // Verify response
     expect(response.statusCode).toBe(200);
     expect(Buffer.isBuffer(response.body)).toBe(true);
-    
+
     // Create a separate baseline for this variation
     expect(response.body).toMatchImageSnapshot({
       ...snapshotConfig,
@@ -123,7 +123,7 @@ describe('Image Snapshots', () => {
         <p>This tests text rendering consistency</p>
       </div>
     `;
-    
+
     const css = `
       .text-snapshot {
         font-family: Arial, sans-serif;
@@ -142,7 +142,7 @@ describe('Image Snapshots', () => {
         font-size: 16px;
       }
     `;
-    
+
     // Send request
     const response = await request(app)
       .post('/render?apiKey=' + process.env.API_KEY)
@@ -153,11 +153,11 @@ describe('Image Snapshots', () => {
       })
       .buffer()
       .parse(parseBinaryResponse);
-    
+
     // Verify response
     expect(response.statusCode).toBe(200);
     expect(Buffer.isBuffer(response.body)).toBe(true);
-    
+
     // Compare with baseline image
     expect(response.body).toMatchImageSnapshot({
       ...snapshotConfig,

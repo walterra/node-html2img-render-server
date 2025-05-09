@@ -8,14 +8,14 @@ const { createTestHtml } = require('../utils/test-utils');
 describe('API Authentication', () => {
   // Set up API key for testing
   let originalApiKey;
-  
+
   beforeAll(() => {
     // Save original API key
     originalApiKey = process.env.API_KEY;
     // Set test API key
     process.env.API_KEY = 'test-api-key';
   });
-  
+
   afterAll(() => {
     // Restore original API key
     process.env.API_KEY = originalApiKey;
@@ -25,9 +25,7 @@ describe('API Authentication', () => {
     const testFixture = createTestHtml();
 
     // Send request without API key
-    const response = await request(app)
-      .post('/render')
-      .send(testFixture);
+    const response = await request(app).post('/render').send(testFixture);
 
     // Verify response status
     expect(response.statusCode).toBe(401);
@@ -40,9 +38,7 @@ describe('API Authentication', () => {
     const testFixture = createTestHtml();
 
     // Send request with invalid API key
-    const response = await request(app)
-      .post('/render?apiKey=invalid-key')
-      .send(testFixture);
+    const response = await request(app).post('/render?apiKey=invalid-key').send(testFixture);
 
     // Verify response status
     expect(response.statusCode).toBe(401);

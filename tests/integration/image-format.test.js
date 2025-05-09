@@ -4,34 +4,26 @@
 const request = require('supertest');
 const app = require('../../server');
 const { toMatchImageSnapshot } = require('jest-image-snapshot');
-const {
-  parseBinaryResponse,
-  createTestHtml,
-  snapshotConfig
-} = require('../utils/test-utils');
+const { parseBinaryResponse, createTestHtml, snapshotConfig } = require('../utils/test-utils');
 
 describe('Image Format Options', () => {
   // Set up API key for testing
   let originalApiKey;
-  
+
   beforeAll(() => {
     // Save original API key
     originalApiKey = process.env.API_KEY;
     // Set test API key
     process.env.API_KEY = 'test-api-key';
-    
+
     // Configure snapshot settings
     expect.extend({
       toMatchImageSnapshot(received) {
-        return toMatchImageSnapshot.call(
-          this,
-          received,
-          snapshotConfig
-        );
+        return toMatchImageSnapshot.call(this, received, snapshotConfig);
       }
     });
   });
-  
+
   afterAll(() => {
     // Restore original API key
     process.env.API_KEY = originalApiKey;
@@ -52,13 +44,13 @@ describe('Image Format Options', () => {
     // Verify PNG format
     expect(response.statusCode).toBe(200);
     expect(response.headers['content-type']).toBe('image/png');
-    
+
     // Check PNG signature (first 8 bytes)
     expect(response.body[0]).toBe(0x89); // PNG signature start
     expect(response.body[1]).toBe(0x50); // P
-    expect(response.body[2]).toBe(0x4E); // N
+    expect(response.body[2]).toBe(0x4e); // N
     expect(response.body[3]).toBe(0x47); // G
-    
+
     // Verify the image matches the expected snapshot
     expect(response.body).toMatchImageSnapshot();
   }, 10000);
@@ -81,11 +73,11 @@ describe('Image Format Options', () => {
     // Verify JPEG format
     expect(response.statusCode).toBe(200);
     expect(response.headers['content-type']).toBe('image/jpeg');
-    
+
     // Check JPEG signature (first 2 bytes)
-    expect(response.body[0]).toBe(0xFF); // JPEG starts with FF
-    expect(response.body[1]).toBe(0xD8); // JPEG SOI marker
-    
+    expect(response.body[0]).toBe(0xff); // JPEG starts with FF
+    expect(response.body[1]).toBe(0xd8); // JPEG SOI marker
+
     // Do not create a snapshot for JPEG as it can vary
   }, 10000);
 
@@ -134,10 +126,10 @@ describe('Image Format Options', () => {
 
     // Low quality JPEG should be smaller than high quality
     expect(lowQualityResponse.body.length).toBeLessThan(highQualityResponse.body.length);
-    
+
     // Do not create a snapshot for JPEG as it can vary
   }, 15000);
-  
+
   test('Should return error for invalid format', async () => {
     const testFixture = {
       ...createTestHtml(),
@@ -152,7 +144,7 @@ describe('Image Format Options', () => {
     expect(response.body.error).toHaveProperty('message');
     expect(response.body.error.message).toContain('Format must be either "png" or "jpeg"');
   });
-  
+
   test('Should validate JPEG quality range', async () => {
     const testFixture = {
       ...createTestHtml(),
@@ -168,7 +160,7 @@ describe('Image Format Options', () => {
     expect(response.body.error).toHaveProperty('message');
     expect(response.body.error.message).toContain('JPEG quality must be between 1 and 100');
   });
-  
+
   test('Should include format in JSON response', async () => {
     const testFixture = {
       ...createTestHtml(),
@@ -185,7 +177,7 @@ describe('Image Format Options', () => {
     expect(response.body).toHaveProperty('contentType', 'image/jpeg');
     expect(response.body).toHaveProperty('image');
     expect(response.body).toHaveProperty('metadata');
-    
+
     // Base64 data should be present
     expect(typeof response.body.image).toBe('string');
     expect(response.body.image.length).toBeGreaterThan(100);

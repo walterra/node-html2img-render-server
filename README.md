@@ -87,9 +87,9 @@ See [EXAMPLES.md](EXAMPLES.md) for more detailed usage examples.
       "style": "normal"
     }
   ],
-  "format": "png",           // "png" or "jpeg" 
-  "quality": 90,             // JPEG quality (1-100)
-  "responseFormat": "image"  // "image" or "json"
+  "format": "png", // "png" or "jpeg"
+  "quality": 90, // JPEG quality (1-100)
+  "responseFormat": "image" // "image" or "json"
 }
 ```
 
@@ -139,17 +139,21 @@ const apiKey = process.env.RENDER_SERVICE_API_KEY;
 
 test('component renders correctly', async () => {
   // Call the render service with default responseFormat (image)
-  const response = await axios.post(`http://localhost:3000/render?apiKey=${apiKey}`, {
-    html: '<div class="card">Product Title</div>',
-    css: '.card { border: 1px solid #ccc; }',
-    viewport: { width: 500, height: 300 }
-  }, {
-    responseType: 'arraybuffer' // Important: tell axios to expect binary data
-  });
-  
+  const response = await axios.post(
+    `http://localhost:3000/render?apiKey=${apiKey}`,
+    {
+      html: '<div class="card">Product Title</div>',
+      css: '.card { border: 1px solid #ccc; }',
+      viewport: { width: 500, height: 300 }
+    },
+    {
+      responseType: 'arraybuffer' // Important: tell axios to expect binary data
+    }
+  );
+
   // The response.data is already the image buffer
   const buffer = Buffer.from(response.data);
-  
+
   // Compare with baseline image
   expect(buffer).toMatchImageSnapshot();
 });
@@ -162,27 +166,35 @@ When testing different image formats (PNG and JPEG), you can use snapshot testin
 ```javascript
 test('should render with different formats', async () => {
   // Test PNG format
-  const pngResponse = await axios.post(`http://localhost:3000/render?apiKey=${apiKey}`, {
-    html: '<div class="card">Product Title</div>',
-    format: 'png' // Explicit format (default is PNG)
-  }, {
-    responseType: 'arraybuffer'
-  });
-  
+  const pngResponse = await axios.post(
+    `http://localhost:3000/render?apiKey=${apiKey}`,
+    {
+      html: '<div class="card">Product Title</div>',
+      format: 'png' // Explicit format (default is PNG)
+    },
+    {
+      responseType: 'arraybuffer'
+    }
+  );
+
   // Test JPEG format with quality setting
-  const jpegResponse = await axios.post(`http://localhost:3000/render?apiKey=${apiKey}`, {
-    html: '<div class="card">Product Title</div>',
-    format: 'jpeg',
-    quality: 90 // Quality setting for JPEG (1-100)
-  }, {
-    responseType: 'arraybuffer'
-  });
-  
+  const jpegResponse = await axios.post(
+    `http://localhost:3000/render?apiKey=${apiKey}`,
+    {
+      html: '<div class="card">Product Title</div>',
+      format: 'jpeg',
+      quality: 90 // Quality setting for JPEG (1-100)
+    },
+    {
+      responseType: 'arraybuffer'
+    }
+  );
+
   // Compare both formats against their respective baselines
   expect(Buffer.from(pngResponse.data)).toMatchImageSnapshot({
     customSnapshotIdentifier: 'png-format-test'
   });
-  
+
   expect(Buffer.from(jpegResponse.data)).toMatchImageSnapshot({
     customSnapshotIdentifier: 'jpeg-format-test'
   });

@@ -3,12 +3,7 @@
  */
 const request = require('supertest');
 const app = require('../../server');
-const {
-  parseBinaryResponse,
-  createTestHtml,
-  snapshotConfig,
-  authenticatedRequest
-} = require('../utils/test-utils');
+const { parseBinaryResponse, createTestHtml, snapshotConfig } = require('../utils/test-utils');
 
 describe('Basic HTML Rendering', () => {
   test('Should render HTML and return image data directly', async () => {
@@ -34,17 +29,17 @@ describe('Basic HTML Rendering', () => {
     expect(response.headers).toHaveProperty('x-rendered-at');
     expect(response.headers).toHaveProperty('x-viewport-width');
     expect(response.headers).toHaveProperty('x-viewport-height');
-    
+
     // Check that we got a valid PNG buffer
     expect(Buffer.isBuffer(response.body)).toBe(true);
     expect(response.body.length).toBeGreaterThan(0);
-    
+
     // Verify PNG header bytes
     expect(response.body[0]).toBe(0x89);
     expect(response.body[1]).toBe(0x50); // P
-    expect(response.body[2]).toBe(0x4E); // N
+    expect(response.body[2]).toBe(0x4e); // N
     expect(response.body[3]).toBe(0x47); // G
-    
+
     // Compare with baseline image
     expect(response.body).toMatchImageSnapshot(snapshotConfig);
   }, 15000); // Extend timeout for rendering
@@ -71,7 +66,7 @@ describe('Basic HTML Rendering', () => {
     expect(response.headers['x-viewport-width']).toBe('600');
     expect(response.headers['x-viewport-height']).toBe('400');
     expect(response.headers['x-viewport-devicescalefactor']).toBe('2');
-    
+
     // Compare with baseline image
     expect(response.body).toMatchImageSnapshot(snapshotConfig);
   }, 15000);
@@ -102,7 +97,7 @@ describe('Basic HTML Rendering', () => {
 
     // Verify response
     expect(response.statusCode).toBe(200);
-    
+
     // The clipped image should be smaller than a full page
     expect(response.body).toMatchImageSnapshot(snapshotConfig);
   }, 15000);
@@ -135,7 +130,7 @@ describe('Basic HTML Rendering', () => {
 
     // Verify response
     expect(response.statusCode).toBe(200);
-    
+
     // The image should show the loaded content
     expect(response.body).toMatchImageSnapshot(snapshotConfig);
   }, 15000);

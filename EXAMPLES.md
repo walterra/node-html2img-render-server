@@ -204,23 +204,27 @@ async function renderAndSaveImage() {
   try {
     // API key should be loaded from environment variables
     const apiKey = process.env.RENDER_SERVICE_API_KEY;
-    
+
     // Request the image directly
-    const response = await axios.post(`http://localhost:3000/render?apiKey=${apiKey}`, {
-      html: '<div class="card">Product Title</div>',
-      css: '.card { border: 1px solid #ccc; padding: 16px; }'
-    }, {
-      responseType: 'arraybuffer'
-    });
-    
+    const response = await axios.post(
+      `http://localhost:3000/render?apiKey=${apiKey}`,
+      {
+        html: '<div class="card">Product Title</div>',
+        css: '.card { border: 1px solid #ccc; padding: 16px; }'
+      },
+      {
+        responseType: 'arraybuffer'
+      }
+    );
+
     // Log metadata from headers
     console.log('Image generated in:', response.headers['x-rendering-time'], 'ms');
     console.log('Screenshot ID:', response.headers['x-screenshot-id']);
-    
+
     // Save the image
     fs.writeFileSync('product.png', response.data);
     console.log('Image saved to product.png');
-    
+
     return response.headers['x-screenshot-id'];
   } catch (error) {
     console.error('Error rendering image:', error.message);
@@ -240,25 +244,25 @@ async function renderAndExtractData() {
   try {
     // API key should be loaded from environment variables
     const apiKey = process.env.RENDER_SERVICE_API_KEY;
-    
+
     // Request JSON response with image and metadata
     const response = await axios.post(`http://localhost:3000/render?apiKey=${apiKey}`, {
       html: '<div class="card">Product Title</div>',
       css: '.card { border: 1px solid #ccc; padding: 16px; }',
       responseFormat: 'json'
     });
-    
+
     // Get image data and metadata
     const { image, metadata } = response.data;
-    
+
     // Save the image
     const imageBuffer = Buffer.from(image, 'base64');
     fs.writeFileSync('product.png', imageBuffer);
-    
+
     // Use metadata
     console.log('Image generated in:', metadata.renderingTime, 'ms');
     console.log('Screenshot ID:', metadata.screenshotId);
-    
+
     return metadata;
   } catch (error) {
     console.error('Error rendering image:', error.message);

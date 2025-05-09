@@ -1,0 +1,9 @@
+# Dependencies
+node_modules
+
+# Build artifacts
+coverage
+dist
+
+# Config files
+jest.config.js

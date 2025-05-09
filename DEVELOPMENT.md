@@ -78,15 +78,18 @@ The service tests both PNG and JPEG formats with snapshots to ensure consistent 
 ### Key Components
 
 1. **Renderer Service** (`src/services/renderer.js`):
+
    - Uses Playwright to render HTML content in a Chromium environment
    - Handles screenshot capture and metadata embedding
    - Returns image data directly in the response
 
 2. **Asset Handling** (`src/services/assets.js`):
+
    - Injects custom fonts and assets into the page
    - Intercepts resource requests to serve embedded assets
 
 3. **API Routes** (`src/routes/render.js`):
+
    - Defines the `/render` endpoint and parameter handling
    - Supports both direct image and JSON response formats
 
