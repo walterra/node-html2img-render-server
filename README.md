@@ -1,3 +1,8 @@
+[![npm](https://img.shields.io/npm/v/node-html2img-render-server.svg?maxAge=2592000)](https://www.npmjs.com/package/node-html2img-render-server)
+[![npm](https://img.shields.io/npm/l/node-html2img-render-server.svg?maxAge=2592000)](https://www.npmjs.com/package/node-html2img-render-server)
+[![npm](https://img.shields.io/npm/dt/node-html2img-render-server.svg?maxAge=2592000)](https://www.npmjs.com/package/node-html2img-render-server)
+[![github ci](https://github.com/walterra/node-html2img-render-server/actions/workflows/ci.yml/badge.svg)](https://github.com/walterra/node-html2img-render-server/actions/workflows/ci.yml)
+
 # node-html2img-render-server
 
 A server for converting HTML to images with Playwright - allows direct HTML input and returns screenshots for visual testing.
