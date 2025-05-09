@@ -1,7 +1,7 @@
-const { chromium } = require('playwright');
-const { PNG } = require('pngjs');
-const { v4: uuidv4 } = require('uuid');
-const { addAssetsToPage } = require('./assets');
+const { chromium } = require("playwright");
+const { PNG } = require("pngjs");
+const { v4: uuidv4 } = require("uuid");
+const { addAssetsToPage } = require("./assets");
 
 // Cache for the browser instance to improve performance
 let browserInstance = null;
@@ -13,13 +13,19 @@ async function getBrowser() {
   if (!browserInstance) {
     try {
       // Try with environment variable for Docker environments
-      process.env.PLAYWRIGHT_BROWSERS_PATH = process.env.PLAYWRIGHT_BROWSERS_PATH || '/home/renderuser/.cache/ms-playwright';
+      process.env.PLAYWRIGHT_BROWSERS_PATH =
+        process.env.PLAYWRIGHT_BROWSERS_PATH ||
+        "/home/renderuser/.cache/ms-playwright";
       browserInstance = await chromium.launch({
         headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+        args: [
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+        ],
       });
     } catch (error) {
-      console.error('Error launching browser:', error.message);
+      console.error("Error launching browser:", error.message);
     }
   }
   return browserInstance;
@@ -32,7 +38,7 @@ async function getBrowser() {
  */
 function createHTMLContent(params) {
   const { html, css, javascript } = params;
-  
+
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -49,14 +55,14 @@ function createHTMLContent(params) {
       -moz-osx-font-smoothing: grayscale;
     }
     /* User CSS */
-    ${css || ''}
+    ${css || ""}
   </style>
 </head>
 <body>
-  ${html || ''}
+  ${html || ""}
   <script>
     // User JavaScript
-    ${javascript || ''}
+    ${javascript || ""}
   </script>
 </body>
 </html>`;
@@ -72,19 +78,19 @@ function embedMetadataInImage(imageBuffer, metadata) {
   try {
     // Parse the PNG file
     const png = PNG.sync.read(imageBuffer);
-    
+
     // Convert metadata to string
     const metadataStr = JSON.stringify(metadata);
-    
+
     // Add metadata as a custom text chunk
     png.text = { metadata: metadataStr };
-    
+
     // Write the PNG with metadata back to a buffer
     const resultBuffer = PNG.sync.write(png);
-    
+
     return resultBuffer;
   } catch (error) {
-    console.error('Error embedding metadata in PNG:', error);
+    console.error("Error embedding metadata in PNG:", error);
     return imageBuffer; // Return original if embedding fails
   }
 }
@@ -105,51 +111,50 @@ async function renderHTML(params) {
     assets,
     fonts,
     embedMetadata = true,
-    format = 'png', // 'png' or 'jpeg'
-    quality = 90     // JPEG quality (1-100)
+    format = "png", // 'png' or 'jpeg'
+    quality = 90, // JPEG quality (1-100)
   } = params;
 
   const browser = await getBrowser();
+
   const context = await browser.newContext({
     viewport,
     deviceScaleFactor: viewport.deviceScaleFactor || 1,
-    userAgent: 'html2img-render-server/1.0.1'
+    userAgent: "html2img-render-server/1.0.1",
   });
-  
+
   let page = null;
-  
+
   try {
-    // Create new page
     page = await context.newPage();
-    
-    // Set content
+
     const htmlContent = createHTMLContent({ html, css, javascript });
-    await page.setContent(htmlContent, { waitUntil: 'networkidle' });
-    
+    await page.setContent(htmlContent, { waitUntil: "networkidle" });
+
     // Add assets and fonts if provided
     if (assets || fonts) {
       await addAssetsToPage(page, { assets, fonts });
     }
-    
+
     // Wait for selector if specified
     if (waitForSelector) {
       await page.waitForSelector(waitForSelector, { timeout: 5000 });
     }
-    
+
     // Take screenshot
     const startTime = Date.now();
-    
+
     const screenshotOptions = {
-      type: format === 'jpeg' ? 'jpeg' : 'png',
+      type: format === "jpeg" ? "jpeg" : "png",
       fullPage: !clipSelector,
-      omitBackground: false
+      omitBackground: false,
     };
-    
+
     // Add quality option for JPEG format
-    if (format === 'jpeg') {
+    if (format === "jpeg") {
       screenshotOptions.quality = quality; // Use provided quality or default (90)
     }
-    
+
     // Clip to selector if specified
     if (clipSelector) {
       try {
@@ -165,47 +170,47 @@ async function renderHTML(params) {
         console.error(`Error clipping to selector ${clipSelector}:`, error);
       }
     }
-    
+
     // Take screenshot and get buffer directly
     const screenshotBuffer = await page.screenshot(screenshotOptions);
-    
+
     const renderingTime = Date.now() - startTime;
-    
+
     // Get browser version
     const browserVersion = await browser.version();
-    
+
     // Generate a unique ID for reference
     const screenshotId = uuidv4();
-    
+
     // Create metadata
     const metadata = {
       renderedAt: new Date().toISOString(),
       viewport,
       browserVersion,
       renderingTime,
-      screenshotId
+      screenshotId,
     };
-    
+
     // Embed metadata in image if requested (only for PNG)
     let finalImageBuffer;
-    if (embedMetadata && format === 'png') {
-      finalImageBuffer = embedMetadataInImage(screenshotBuffer, metadata);
+    if (embedMetadata && format === "png") {
+      finalImageBuffer = await embedMetadataInImage(screenshotBuffer, metadata);
     } else {
       finalImageBuffer = screenshotBuffer;
     }
-    
+
     // Determine content type based on format
-    const contentType = format === 'jpeg' ? 'image/jpeg' : 'image/png';
-    
+    const contentType = format === "jpeg" ? "image/jpeg" : "image/png";
+
     // We already handled conditional metadata embedding above
     // So just use the finalImageBuffer that contains the correct version
     const outputBuffer = finalImageBuffer;
-      
+
     // Return both image and metadata
     return {
       imageBuffer: outputBuffer,
       metadata,
-      contentType
+      contentType,
     };
   } finally {
     if (page) {
@@ -226,17 +231,17 @@ async function closeBrowser() {
 }
 
 // Handle graceful shutdown
-process.on('SIGTERM', async () => {
+process.on("SIGTERM", async () => {
   await closeBrowser();
   process.exit(0);
 });
 
-process.on('SIGINT', async () => {
+process.on("SIGINT", async () => {
   await closeBrowser();
   process.exit(0);
 });
 
 module.exports = {
   renderHTML,
-  closeBrowser
+  closeBrowser,
 };
