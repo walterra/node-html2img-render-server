@@ -43,16 +43,19 @@ function validatePayload(req, res, next) {
   // Validate viewport if provided
   if (viewport) {
     const { width, height, deviceScaleFactor } = viewport;
-    
+
     if (typeof width !== 'number' || width <= 0 || width > 5000) {
       return next(new ApiError('Invalid viewport width (must be between 1-5000)', 400));
     }
-    
+
     if (typeof height !== 'number' || height <= 0 || height > 5000) {
       return next(new ApiError('Invalid viewport height (must be between 1-5000)', 400));
     }
-    
-    if (deviceScaleFactor && (typeof deviceScaleFactor !== 'number' || deviceScaleFactor <= 0 || deviceScaleFactor > 5)) {
+
+    if (
+      deviceScaleFactor &&
+      (typeof deviceScaleFactor !== 'number' || deviceScaleFactor <= 0 || deviceScaleFactor > 5)
+    ) {
       return next(new ApiError('Invalid deviceScaleFactor (must be between 0-5)', 400));
     }
   }
@@ -69,11 +72,9 @@ function validatePayload(req, res, next) {
     /<\s*iframe.*src\s*=\s*["']file:\/\//i
   ];
 
-  const combinedContent = [
-    req.body.html, 
-    req.body.javascript, 
-    req.body.css
-  ].filter(Boolean).join(' ');
+  const combinedContent = [req.body.html, req.body.javascript, req.body.css]
+    .filter(Boolean)
+    .join(' ');
 
   for (const pattern of maliciousPatterns) {
     if (pattern.test(combinedContent)) {
@@ -97,45 +98,47 @@ function validatePayload(req, res, next) {
  */
 function rateLimit(maxRequests = 60, windowMs = 60 * 1000) {
   const requests = new Map();
-  
+
   // Cleanup old entries every minute
   setInterval(() => {
     const now = Date.now();
-    
+
     for (const [key, entry] of requests.entries()) {
       if (now - entry.timestamp > windowMs) {
         requests.delete(key);
       }
     }
   }, 60 * 1000);
-  
+
   return (req, res, next) => {
     const ip = req.ip;
     const now = Date.now();
-    
+
     if (!requests.has(ip)) {
       requests.set(ip, { count: 1, timestamp: now });
       return next();
     }
-    
+
     const entry = requests.get(ip);
-    
+
     // Reset counter if window has passed
     if (now - entry.timestamp > windowMs) {
       entry.count = 1;
       entry.timestamp = now;
       return next();
     }
-    
+
     // Increment counter and check limit
     entry.count++;
-    
+
     if (entry.count > maxRequests) {
-      return next(new ApiError('Too many requests', 429, {
-        retryAfter: Math.ceil((entry.timestamp + windowMs - now) / 1000)
-      }));
+      return next(
+        new ApiError('Too many requests', 429, {
+          retryAfter: Math.ceil((entry.timestamp + windowMs - now) / 1000)
+        })
+      );
     }
-    
+
     next();
   };
 }
@@ -148,15 +151,15 @@ function rateLimit(maxRequests = 60, windowMs = 60 * 1000) {
 function isSafeUrl(url) {
   try {
     const parsedUrl = new URL(url);
-    
+
     // Block private IP ranges
     const hostname = parsedUrl.hostname;
-    
+
     // Check for localhost
     if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') {
       return false;
     }
-    
+
     // Check for private IP ranges
     const privateRanges = [
       /^10\.\d+\.\d+\.\d+$/,
@@ -165,18 +168,18 @@ function isSafeUrl(url) {
       /^169\.254\.\d+\.\d+$/,
       /^127\.\d+\.\d+\.\d+$/
     ];
-    
+
     for (const range of privateRanges) {
       if (range.test(hostname)) {
         return false;
       }
     }
-    
+
     // Check for non-HTTP protocols
     if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
       return false;
     }
-    
+
     return true;
   } catch (err) {
     return false;

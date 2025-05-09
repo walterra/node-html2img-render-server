@@ -142,81 +142,81 @@ describe('Security Middleware', () => {
   describe('rateLimit', () => {
     let req, res, next;
     let middleware;
-    
+
     beforeEach(() => {
       jest.useFakeTimers();
-      
+
       req = { ip: '127.0.0.1' };
       res = {};
       next = jest.fn();
-      
+
       middleware = rateLimit(5, 1000); // 5 requests per second
     });
-    
+
     afterEach(() => {
       jest.useRealTimers();
     });
-    
+
     test('Should allow requests under the limit', () => {
       for (let i = 0; i < 5; i++) {
         middleware(req, res, next);
       }
-      
+
       expect(next).toHaveBeenCalledTimes(5);
       expect(next).toHaveBeenCalledWith();
     });
-    
+
     test('Should reject requests over the limit', () => {
       for (let i = 0; i < 6; i++) {
         middleware(req, res, next);
       }
-      
+
       expect(next).toHaveBeenCalledTimes(6);
       expect(next.mock.calls[5][0]).toBeInstanceOf(ApiError);
       expect(next.mock.calls[5][0].status).toBe(429);
     });
-    
+
     test('Should reset counter after time window', () => {
       // Make max requests
       for (let i = 0; i < 5; i++) {
         middleware(req, res, next);
       }
-      
+
       // Advance time past the window
       jest.advanceTimersByTime(1001);
-      
+
       // Should be able to make more requests
       middleware(req, res, next);
-      
+
       expect(next).toHaveBeenCalledTimes(6);
       expect(next.mock.calls[5][0]).toBeUndefined();
     });
-    
+
     test('Should clean up old entries', () => {
       const spy = jest.spyOn(Map.prototype, 'delete');
-      
+
       middleware(req, res, next);
-      
+
       // Advance time past cleanup interval
       jest.advanceTimersByTime(60 * 1000 + 1);
-      
+
       expect(spy).toHaveBeenCalled();
-      
+
       spy.mockRestore();
     });
-    
+
     test('Should handle different IPs separately', () => {
       const req2 = { ip: '1.2.3.4' };
-      
+
       // Max out first IP
       for (let i = 0; i < 5; i++) {
         middleware(req, res, next);
       }
-      
+
       // Should reject next request from first IP
       middleware(req, res, next);
       expect(next.mock.calls[5][0]).toBeInstanceOf(ApiError);
-      
+
       // But second IP should work
       middleware(req2, res, next);
       expect(next.mock.calls[6][0]).toBeUndefined();

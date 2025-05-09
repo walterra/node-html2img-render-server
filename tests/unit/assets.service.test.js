@@ -32,7 +32,7 @@ describe('Asset Service', () => {
       expect(getMimeType('path/to/my.site.com/image.png')).toBe('image/png');
       expect(getMimeType('version.1.2/font.woff2')).toBe('font/woff2');
     });
-    
+
     test('Should handle uppercase extensions', () => {
       expect(getMimeType('image.PNG')).toBe('image/png');
       expect(getMimeType('font.WOFF2')).toBe('font/woff2');
@@ -42,7 +42,7 @@ describe('Asset Service', () => {
   describe('addAssetsToPage', () => {
     let page, route;
     const mockBuffer = Buffer.from('test');
-    
+
     beforeEach(() => {
       // Mock for Playwright page object
       route = {
@@ -52,7 +52,7 @@ describe('Asset Service', () => {
         fulfill: jest.fn().mockResolvedValue(undefined),
         continue: jest.fn().mockResolvedValue(undefined)
       };
-      
+
       page = {
         route: jest.fn().mockImplementation(async (pattern, handler) => {
           await handler(route);
@@ -60,27 +60,27 @@ describe('Asset Service', () => {
         addStyleTag: jest.fn().mockResolvedValue(undefined),
         waitForTimeout: jest.fn().mockResolvedValue(undefined)
       };
-      
+
       // Spy on console.error to avoid polluting test output
       jest.spyOn(console, 'error').mockImplementation(() => {});
     });
-    
+
     afterEach(() => {
       jest.restoreAllMocks();
     });
-    
+
     test('Should handle empty options gracefully', async () => {
       await addAssetsToPage(page, null);
       expect(page.route).not.toHaveBeenCalled();
       expect(page.addStyleTag).not.toHaveBeenCalled();
     });
-    
+
     test('Should handle empty assets and fonts gracefully', async () => {
       await addAssetsToPage(page, { assets: {}, fonts: [] });
       expect(page.route).not.toHaveBeenCalled();
       expect(page.addStyleTag).not.toHaveBeenCalled();
     });
-    
+
     test('Should inject font CSS for fonts', async () => {
       const fonts = [
         {
@@ -96,12 +96,12 @@ describe('Asset Service', () => {
           style: 'italic'
         }
       ];
-      
+
       await addAssetsToPage(page, { fonts });
-      
+
       expect(page.addStyleTag).toHaveBeenCalledTimes(1);
       const cssContent = page.addStyleTag.mock.calls[0][0].content;
-      
+
       // Check that the CSS contains the font declarations
       expect(cssContent).toContain('@font-face');
       expect(cssContent).toContain("font-family: 'TestFont'");
@@ -110,26 +110,23 @@ describe('Asset Service', () => {
       expect(cssContent).toContain('font-style: normal');
       expect(cssContent).toContain('font-style: italic');
       expect(cssContent).toContain('base64fontdata');
-      
+
       // Should wait for fonts to load
       expect(page.waitForTimeout).toHaveBeenCalledTimes(1);
     });
-    
+
     test('Should handle errors gracefully', async () => {
       // Make addStyleTag throw an error
       page.addStyleTag.mockRejectedValue(new Error('Test error'));
-      
-      await addAssetsToPage(page, { 
-        fonts: [{ name: 'TestFont', data: 'base64fontdata' }] 
+
+      await addAssetsToPage(page, {
+        fonts: [{ name: 'TestFont', data: 'base64fontdata' }]
       });
-      
+
       // Should log the error
-      expect(console.error).toHaveBeenCalledWith(
-        'Error adding assets to page:',
-        expect.any(Error)
-      );
+      expect(console.error).toHaveBeenCalledWith('Error adding assets to page:', expect.any(Error));
     });
-    
+
     test('Should handle font without explicit weight and style', async () => {
       const fonts = [
         {
@@ -138,12 +135,12 @@ describe('Asset Service', () => {
           // No weight or style specified
         }
       ];
-      
+
       await addAssetsToPage(page, { fonts });
-      
+
       expect(page.addStyleTag).toHaveBeenCalledTimes(1);
       const cssContent = page.addStyleTag.mock.calls[0][0].content;
-      
+
       // Should use default weight and style
       expect(cssContent).toContain('font-weight: normal');
       expect(cssContent).toContain('font-style: normal');

@@ -7,19 +7,19 @@ const app = require('../../server');
 describe('Input Validation', () => {
   // Setup for tests with API key authentication
   let originalApiKey;
-  
+
   beforeAll(() => {
     // Save the current API key
     originalApiKey = process.env.API_KEY;
     // Set the API key for our tests
     process.env.API_KEY = 'test-api-key';
   });
-  
+
   afterAll(() => {
     // Restore the original API key
     process.env.API_KEY = originalApiKey;
   });
-  
+
   test('Should reject request when API key is missing', async () => {
     const response = await request(app)
       .post('/render')
@@ -72,7 +72,7 @@ describe('Input Validation', () => {
     expect(response.body).toHaveProperty('error');
     expect(response.body.error.message).toContain('Invalid viewport width');
   });
-  
+
   test('Should reject request for excessive viewport size', async () => {
     const response = await request(app)
       .post('/render?apiKey=' + process.env.API_KEY)
@@ -122,7 +122,7 @@ describe('Input Validation', () => {
     expect(response.statusCode).toBe(200);
     expect(response.headers['content-type']).toBe('image/png');
   });
-  
+
   test('Should validate with proper API key', async () => {
     const response = await request(app)
       .post('/render?apiKey=' + process.env.API_KEY)

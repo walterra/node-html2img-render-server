@@ -62,7 +62,9 @@ function extractMetadataFromHeaders(headers, viewport) {
     viewport: {
       width: parseInt(headers['x-viewport-width'] || viewport.width),
       height: parseInt(headers['x-viewport-height'] || viewport.height),
-      deviceScaleFactor: parseFloat(headers['x-viewport-devicescalefactor'] || viewport.deviceScaleFactor || 1)
+      deviceScaleFactor: parseFloat(
+        headers['x-viewport-devicescalefactor'] || viewport.deviceScaleFactor || 1
+      )
     }
   };
 }
@@ -77,8 +79,12 @@ function createTestHtml(options = {}) {
   const height = options.height || 200;
   const bgColor = options.color || 'cornflowerblue';
   const text = options.text || 'Test Content';
-  const viewport = options.viewport || { width: width + 100, height: height + 100, deviceScaleFactor: 1 };
-  
+  const viewport = options.viewport || {
+    width: width + 100,
+    height: height + 100,
+    deviceScaleFactor: 1
+  };
+
   return {
     html: `<div class="test-element">${text}</div>`,
     css: `.test-element { 

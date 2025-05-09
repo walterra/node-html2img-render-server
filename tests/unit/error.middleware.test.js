@@ -66,9 +66,9 @@ describe('Error Middleware', () => {
 
     test('Should respond with error details', () => {
       const error = new ApiError('Test error', 400);
-      
+
       errorHandler(error, req, res, next);
-      
+
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({
         error: {
@@ -81,9 +81,9 @@ describe('Error Middleware', () => {
 
     test('Should use default status 500 for non-ApiErrors', () => {
       const error = new Error('System error');
-      
+
       errorHandler(error, req, res, next);
-      
+
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({
         error: {
@@ -97,18 +97,18 @@ describe('Error Middleware', () => {
     test('Should hide stack trace in production', () => {
       const originalEnv = process.env.NODE_ENV;
       process.env.NODE_ENV = 'production';
-      
+
       const error = new ApiError('Production error', 500);
-      
+
       errorHandler(error, req, res, next);
-      
+
       expect(res.json).toHaveBeenCalledWith({
         error: {
           message: 'Production error',
           status: 500
         }
       });
-      
+
       // Restore environment
       process.env.NODE_ENV = originalEnv;
     });
@@ -128,7 +128,7 @@ describe('Error Middleware', () => {
 
     test('Should create 404 error and pass to next', () => {
       notFound(req, res, next);
-      
+
       expect(next).toHaveBeenCalledWith(expect.any(ApiError));
       const error = next.mock.calls[0][0];
       expect(error.status).toBe(404);
@@ -143,33 +143,33 @@ describe('Error Middleware', () => {
 
     beforeEach(() => {
       jest.useFakeTimers();
-      
+
       req = {};
       res = {
         on: jest.fn()
       };
       next = jest.fn();
-      
+
       timeoutFn = timeout(1000);
     });
-    
+
     afterEach(() => {
       jest.useRealTimers();
     });
 
     test('Should set timeout and call next', () => {
       timeoutFn(req, res, next);
-      
+
       expect(res.on).toHaveBeenCalledWith('finish', expect.any(Function));
       expect(next).toHaveBeenCalledWith();
     });
 
     test('Should trigger timeout error after specified time', () => {
       timeoutFn(req, res, next);
-      
+
       // Fast-forward time past timeout
       jest.advanceTimersByTime(1001);
-      
+
       expect(next).toHaveBeenCalledTimes(2);
       expect(next.mock.calls[1][0]).toBeInstanceOf(ApiError);
       expect(next.mock.calls[1][0].status).toBe(408);
@@ -177,29 +177,29 @@ describe('Error Middleware', () => {
 
     test('Should clear timeout when response finishes', () => {
       timeoutFn(req, res, next);
-      
+
       // Extract the finish handler
       const finishHandler = res.on.mock.calls[0][1];
-      
+
       // Call the finish handler
       finishHandler();
-      
+
       // Fast-forward time past timeout
       jest.advanceTimersByTime(1001);
-      
+
       // Should not call next with error
       expect(next).toHaveBeenCalledTimes(1);
     });
 
     test('Should use default timeout value when not specified', () => {
       const defaultTimeoutFn = timeout();
-      
+
       defaultTimeoutFn(req, res, next);
-      
+
       // Fast-forward time just before default timeout (30s)
       jest.advanceTimersByTime(29999);
       expect(next).toHaveBeenCalledTimes(1);
-      
+
       // Fast-forward past default timeout
       jest.advanceTimersByTime(1);
       expect(next).toHaveBeenCalledTimes(2);

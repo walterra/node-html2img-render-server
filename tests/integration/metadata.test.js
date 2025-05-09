@@ -31,7 +31,7 @@ describe('Metadata Embedding', () => {
     // Verify basic response
     expect(response.statusCode).toBe(200);
     expect(Buffer.isBuffer(response.body)).toBe(true);
-    
+
     // Check for all required metadata headers
     expect(response.headers).toHaveProperty('x-screenshot-id');
     expect(response.headers).toHaveProperty('x-rendering-time');
@@ -40,16 +40,18 @@ describe('Metadata Embedding', () => {
     expect(response.headers).toHaveProperty('x-viewport-width');
     expect(response.headers).toHaveProperty('x-viewport-height');
     expect(response.headers).toHaveProperty('x-viewport-devicescalefactor');
-    
+
     // Verify viewport settings in headers
     expect(response.headers['x-viewport-width']).toBe(testViewport.width.toString());
     expect(response.headers['x-viewport-height']).toBe(testViewport.height.toString());
-    expect(response.headers['x-viewport-devicescalefactor']).toBe(testViewport.deviceScaleFactor.toString());
-    
+    expect(response.headers['x-viewport-devicescalefactor']).toBe(
+      testViewport.deviceScaleFactor.toString()
+    );
+
     // Verify timestamp format
     const renderedAt = new Date(response.headers['x-rendered-at']);
     expect(renderedAt).toBeInstanceOf(Date);
-    
+
     // Verify rendering time is a number
     const renderingTime = parseInt(response.headers['x-rendering-time']);
     expect(renderingTime).toBeGreaterThan(0);
@@ -72,23 +74,23 @@ describe('Metadata Embedding', () => {
     // Verify basic response
     expect(response.statusCode).toBe(200);
     expect(Buffer.isBuffer(response.body)).toBe(true);
-    
+
     // Extract metadata from PNG chunks and headers for comparison
     const headerMetadata = extractMetadataFromHeaders(response.headers, testFixture.viewport);
-    
+
     try {
       // Attempt to extract metadata from PNG chunks
       const png = PNG.sync.read(response.body);
-      
+
       // If metadata is present in PNG, compare with headers
       if (png.text && png.text.metadata) {
         const pngMetadata = JSON.parse(png.text.metadata);
-        
+
         // Verify key metadata fields match
         expect(pngMetadata.screenshotId).toBe(headerMetadata.screenshotId);
         expect(pngMetadata.renderedAt).toBe(headerMetadata.renderedAt);
         expect(pngMetadata.browserVersion).toBe(headerMetadata.browserVersion);
-        
+
         // Viewport settings should match what we sent
         expect(pngMetadata.viewport).toEqual(testFixture.viewport);
       } else {
@@ -100,7 +102,7 @@ describe('Metadata Embedding', () => {
       // Even if PNG metadata extraction fails, test continues as long as headers are correct
       console.log('Error extracting PNG metadata:', error.message);
     }
-    
+
     // The test succeeds if headers are correct, PNG metadata is optional
     expect(headerMetadata.screenshotId).toBeDefined();
     expect(headerMetadata.renderedAt).toBeDefined();

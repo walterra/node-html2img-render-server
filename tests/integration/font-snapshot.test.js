@@ -12,7 +12,10 @@ const { toMatchImageSnapshot } = require('jest-image-snapshot');
 expect.extend({ toMatchImageSnapshot });
 
 // Load the actual font for testing
-const TEST_FONT_BASE64 = fs.readFileSync(path.join(__dirname, '../fonts/tagesschrift/tagesschrift-base64.txt'), 'utf8');
+const TEST_FONT_BASE64 = fs.readFileSync(
+  path.join(__dirname, '../fonts/tagesschrift/tagesschrift-base64.txt'),
+  'utf8'
+);
 
 describe('Font Rendering Snapshots', () => {
   test('Should render text with custom font matching snapshot', async () => {
@@ -27,7 +30,7 @@ describe('Font Rendering Snapshots', () => {
         <div class="sample-text">0123456789</div>
       </div>
     `;
-    
+
     const css = `
       .custom-font-sample {
         font-family: 'TagesschriftFont', sans-serif;
@@ -48,7 +51,7 @@ describe('Font Rendering Snapshots', () => {
         letter-spacing: 2px;
       }
     `;
-    
+
     // Include the custom font in the request
     const fonts = [
       {
@@ -58,10 +61,10 @@ describe('Font Rendering Snapshots', () => {
         style: 'normal'
       }
     ];
-    
+
     // Add some delay to ensure font is properly loaded
     const renderDelay = 200;
-    
+
     // Perform the request to get the rendered image
     const response = await request(app)
       .post('/render?apiKey=' + process.env.API_KEY)
@@ -74,11 +77,11 @@ describe('Font Rendering Snapshots', () => {
       })
       .buffer()
       .parse(parseBinaryResponse);
-    
+
     // Verify we got a valid response
     expect(response.statusCode).toBe(200);
     expect(Buffer.isBuffer(response.body)).toBe(true);
-    
+
     // Compare the image against the snapshot
     expect(response.body).toMatchImageSnapshot({
       ...snapshotConfig,
