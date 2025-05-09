@@ -12,7 +12,10 @@ const { rateLimit } = require('./src/middleware/security');
 const { initTelemetry } = require('./src/services/telemetry');
 
 // Initialize telemetry with Elasticsearch support
-const telemetryEnabled = process.env.ENABLE_TELEMETRY !== 'false';
+// Determine if we should enable telemetry - disabled in tests and when ENABLE_TELEMETRY is 'false'
+const telemetryEnabled = (process.env.NODE_ENV !== 'test' && !process.env.JEST_WORKER_ID) &&
+                         process.env.ENABLE_TELEMETRY !== 'false';
+
 if (telemetryEnabled) {
   // Configure telemetry with environment variables
   initTelemetry({
@@ -23,6 +26,11 @@ if (telemetryEnabled) {
     samplingRatio: parseFloat(process.env.OTEL_TRACES_SAMPLER_ARG || '1.0')
   });
   logger.info('Telemetry initialized with Elasticsearch support');
+} else if (process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID) {
+  // Test mode detected, keeping telemetry disabled
+  if (process.env.NODE_ENV === 'development') {
+    logger.info('Telemetry disabled in test environment');
+  }
 }
 
 // Initialize Express app
