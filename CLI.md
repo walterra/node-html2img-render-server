@@ -102,10 +102,18 @@ kill $SERVER_PID
 
 The CLI also supports configuration through environment variables:
 
-- `PORT`: Server port
+### Service Configuration
 - `API_KEY`: Authentication key
+- `PORT`: Server port
 - `RATE_LIMIT_MAX`: Maximum requests per minute
 - `RATE_LIMIT_WINDOW_MS`: Rate limit window in milliseconds
 - `REQUEST_TIMEOUT_MS`: Request timeout in milliseconds
 
+### OpenTelemetry Configuration
+- `OTEL_SERVICE_NAME`: Service name for telemetry reporting
+- `OTEL_EXPORTER_OTLP_ENDPOINT`: OpenTelemetry collector endpoint
+- `OTEL_EXPORTER_OTLP_HEADERS`: Headers for OTLP endpoint authentication
+
 Command-line options take precedence over environment variables.
+
+For more details on telemetry configuration, see [Observability](docs/observability.md).

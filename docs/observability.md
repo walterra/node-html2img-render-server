@@ -1,60 +1,77 @@
 # HTML Render Service Observability
 
-This document describes how to use the observability features in the HTML Render Service, including logging, metrics, and tracing with OpenTelemetry and Elasticsearch.
+This document describes how to use the observability features in the HTML Render Service, including logging, metrics, and tracing with OpenTelemetry and Elastic APM.
 
 ## Overview
 
-The HTML Render Service includes comprehensive instrumentation using OpenTelemetry, providing:
+The HTML Render Service includes comprehensive instrumentation using Elastic's OpenTelemetry SDK, providing:
 
 - **Distributed Tracing**: Track requests through the system
 - **Metrics**: Measure performance and system health
 - **Logging**: Enhanced structured logging for debugging
 
-The implementation is platform-agnostic but includes specific support for Elasticsearch observability.
+This implementation uses the official `@elastic/opentelemetry-node` package for seamless integration with Elastic Cloud APM.
 
 ## Configuration
 
-Telemetry can be configured using environment variables:
+Telemetry can be configured using environment variables in a `.env` file at the project root:
 
-| Variable                  | Description                           | Default                       |
-| ------------------------- | ------------------------------------- | ----------------------------- |
-| `ENABLE_TELEMETRY`        | Enable/disable telemetry              | `true`                        |
-| `OTEL_SERVICE_NAME`       | Service name                          | `node-html2img-render-server` |
-| `NODE_ENV`                | Environment (production, development) | `development`                 |
-| `OTLP_ENDPOINT`           | OTLP endpoint URL                     | `http://localhost:4318`       |
-| `OTEL_TRACES_SAMPLER_ARG` | Sampling ratio (0.0-1.0)              | `1.0`                         |
+```bash
+# OpenTelemetry using @elastic/opentelemetry-node
+OTEL_EXPORTER_OTLP_ENDPOINT="...your-OTLP/collector-endpoint..."
+OTEL_EXPORTER_OTLP_HEADERS="Authorization=..."
+OTEL_SERVICE_NAME="node-html2img-render-server"
+```
 
-## Setting Up with Elasticsearch
+To set up your environment variables:
 
-### Using Elasticsearch APM Server
+1. Copy the `.env.example` file to `.env`
+2. Edit the `.env` file with your specific configuration
 
-1. **Install Elasticsearch and APM Server**:
+Available configuration variables:
 
-   - Follow the [official Elastic documentation](https://www.elastic.co/guide/en/apm/guide/current/apm-quick-start.html)
-   - Configure APM server to accept OTLP data
+| Variable                    | Description                              | Default                       |
+| --------------------------- | ---------------------------------------- | ----------------------------- |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | OpenTelemetry collector endpoint       | (requires configuration)      |
+| `OTEL_EXPORTER_OTLP_HEADERS`  | Headers for authentication (e.g., API key) | (requires configuration)  |
+| `OTEL_SERVICE_NAME`         | Service name for telemetry reporting     | `node-html2img-render-server` |
+| `NODE_ENV`                  | Environment (production, dev)            | `development`                 |
+
+## Setting Up with Elastic Cloud
+
+### Using Elastic Cloud APM
+
+Setting up with Elastic Cloud is now simplified:
+
+1. **Obtain your APM server details from Elastic Cloud console**:
+   - OTLP endpoint URL
+   - API key for authorization
 
 2. **Configure the HTML Render Service**:
-
    ```bash
-   # Set environment variables
-   export OTLP_ENDPOINT=http://your-apm-server:8200
-   export OTEL_SERVICE_NAME=html-render-service
-   export NODE_ENV=production
+   # Add to your .env file
+   OTEL_SERVICE_NAME=node-html2img-render-server
+   OTEL_EXPORTER_OTLP_ENDPOINT=https://your-deployment-id.apm.region.aws.elastic.cloud:443
+   OTEL_EXPORTER_OTLP_HEADERS="Authorization=ApiKey your_api_key_here"
 
-   # Start the server
-   npm start
+   # Start the server (automatically loads OpenTelemetry via -r @elastic/opentelemetry-node)
+   yarn start
    ```
 
-### Using Elastic Cloud
+### Finding Your Elastic Cloud APM Details
 
-If you're using Elastic Cloud:
+1. **Find your OTLP Endpoint URL**:
+   - Log in to your Elastic Cloud console
+   - Navigate to your deployment
+   - Click on "APM & Fleet" in the sidebar
+   - Find the "OTLP Endpoint" in the APM Agents tab
+   - Example: `https://your-deployment-id.apm.region.aws.elastic.cloud:443`
 
-1. Obtain your APM server endpoint and API key
-2. Configure environment variables:
-   ```bash
-   export OTLP_ENDPOINT=https://your-apm-server-url
-   export OTEL_API_KEY=your-api-key
-   ```
+2. **Create an API Key**:
+   - In the Elastic Cloud console, go to Management → API Keys
+   - Create a new API key with "apm_write" role
+   - Copy the API key (it's only shown once)
+   - Format for the headers: `"Authorization=ApiKey your_api_key_here"`
 
 ## What's Being Tracked
 
@@ -83,12 +100,10 @@ The telemetry implementation captures:
 - Error classification
 - Exception context
 
-## Visualizing Data
+## Visualizing Data in Kibana
 
-In Elasticsearch/Kibana:
-
-1. Open Kibana and navigate to APM
-2. Select the `html-render-service` in the services list
+1. Open Kibana and navigate to the APM section
+2. Select the `node-html2img-render-server` service in the services list
 3. Explore:
    - Service map
    - Transactions
@@ -108,30 +123,68 @@ Create custom dashboards to monitor:
 
 If telemetry data isn't appearing:
 
-1. Verify the OTLP endpoint is accessible
-2. Check that `ENABLE_TELEMETRY` is not set to `false`
+1. Verify the OTEL_EXPORTER_OTLP_ENDPOINT is accessible
+2. Check that your endpoint and API key in OTEL_EXPORTER_OTLP_HEADERS are correct
 3. Examine server logs for telemetry initialization messages
 4. Verify APM server is correctly receiving data
 
+### Common Issues
+
+#### Authentication Errors (401 Unauthorized)
+
+If you see authentication errors:
+
+1. **Verify API Key Format**: Ensure the format is `"Authorization=ApiKey your_api_key_here"` in OTEL_EXPORTER_OTLP_HEADERS
+2. **Check API Key Validity**: Double-check your API key from the Elastic Cloud console
+3. **Ensure Proper Permissions**: Make sure the API key has the right APM permissions
+4. **Create New Key**: Try generating a new API key if problems persist
+
+#### Connection Errors
+
+If you see connection errors:
+
+1. **Check URL Format**: Ensure you're using the correct OTLP endpoint URL with port number
+2. **Firewall Issues**: Verify that port 443 is open for HTTPS traffic
+3. **Network Access**: Ensure your server has internet access to Elastic Cloud
+
+## Implementation Details
+
+This service uses the `@elastic/opentelemetry-node` package which provides automatic instrumentation for:
+
+- HTTP requests and responses
+- Express middleware and routes
+- Playwright browser interactions
+- Async operations and timers
+- Error tracking and exceptions
+
+The OpenTelemetry is loaded at startup through the `-r @elastic/opentelemetry-node` flag in the `yarn start` command, which automatically instruments the application without requiring manual code changes.
+
+The configuration is based on standard OpenTelemetry environment variables:
+
+- `OTEL_SERVICE_NAME`: Identifies your service in Elastic APM
+- `OTEL_EXPORTER_OTLP_ENDPOINT`: The endpoint where telemetry data is sent
+- `OTEL_EXPORTER_OTLP_HEADERS`: Contains authentication information for the endpoint
+
 ## Extending Telemetry
 
-The telemetry implementation can be extended:
+You can access the OpenTelemetry API to add custom instrumentation if needed:
 
 ```javascript
-const {
-  getCurrentSpan,
-  createSpan,
-  withSpan,
-} = require("./src/services/telemetry");
+const { trace } = require('@opentelemetry/api');
 
-// Add custom attributes to current span
-const span = getCurrentSpan();
+// Get the current active span
+const span = trace.getActiveSpan();
 if (span) {
   span.setAttribute("custom.attribute", "value");
 }
 
 // Create a custom span for a specific operation
-await withSpan("custom.operation", async () => {
-  // Operation code here
+const tracer = trace.getTracer('my-service');
+await tracer.startActiveSpan('custom.operation', async (span) => {
+  try {
+    // Operation code here
+  } finally {
+    span.end();
+  }
 });
 ```

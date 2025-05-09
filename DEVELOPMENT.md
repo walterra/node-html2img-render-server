@@ -118,12 +118,18 @@ docker run -p 3000:3000 -e API_KEY="your-api-key" node-html2img-render-server
 
 Environment variables that can be set:
 
+- `API_KEY`: Authentication key for API access (required)
 - `PORT`: Server port (default: 3000)
 - `NODE_ENV`: Environment (development, production)
 - `RATE_LIMIT_MAX`: Maximum requests per window (default: 60)
 - `RATE_LIMIT_WINDOW_MS`: Rate limit window in milliseconds (default: 60000)
 - `REQUEST_TIMEOUT_MS`: Request timeout in milliseconds (default: 30000)
-- `API_KEY`: Authentication key for API access (required)
+
+### OpenTelemetry Configuration
+
+- `OTEL_SERVICE_NAME`: Service name for telemetry reporting
+- `OTEL_EXPORTER_OTLP_ENDPOINT`: OpenTelemetry collector endpoint (required for telemetry)
+- `OTEL_EXPORTER_OTLP_HEADERS`: Headers for OTLP endpoint authentication
 
 ## Extending the Service
 
