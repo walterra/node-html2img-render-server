@@ -42,8 +42,16 @@ For CLI options and advanced usage, see [CLI.md](CLI.md).
 # Pull the image
 docker pull walterra/node-html2img-render-server
 
-# Run the service
+# Run the service without telemetry
 docker run -p 3000:3000 -e API_KEY=your-api-key walterra/node-html2img-render-server
+
+# Run with OpenTelemetry (for monitoring with Elastic APM)
+docker run -p 3000:3000 \
+  -e API_KEY=your-api-key \
+  -e OTEL_SERVICE_NAME=node-html2img-render-server \
+  -e OTEL_EXPORTER_OTLP_ENDPOINT=your-elastic-apm-endpoint \
+  -e OTEL_EXPORTER_OTLP_HEADERS="Authorization=ApiKey your-elastic-api-key" \
+  walterra/node-html2img-render-server
 ```
 
 ### Basic Usage

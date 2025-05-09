@@ -69,10 +69,16 @@ ENV NODE_ENV=production
 # Set Playwright browsers path explicitly for Docker
 ENV PLAYWRIGHT_BROWSERS_PATH=/home/renderuser/.cache/ms-playwright
 
+# OpenTelemetry configuration (override these at runtime with -e flags)
+ENV OTEL_SERVICE_NAME=node-html2img-render-server
+# These need to be provided at runtime or in .env file
+# ENV OTEL_EXPORTER_OTLP_ENDPOINT=your-otlp-endpoint
+# ENV OTEL_EXPORTER_OTLP_HEADERS=Authorization=ApiKey your-api-key
+
 # Run as non-root user for better security
 RUN groupadd -r renderuser && useradd -r -g renderuser -G audio,video renderuser \
     && chown -R renderuser:renderuser /app
 USER renderuser
 
-# Start the server
-CMD ["node", "server.js"]
+# Start the server with OpenTelemetry enabled
+CMD ["node", "-r", "@elastic/opentelemetry-node", "server.js"]
