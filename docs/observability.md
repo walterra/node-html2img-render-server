@@ -164,6 +164,26 @@ The configuration is based on standard OpenTelemetry environment variables:
 - `OTEL_SERVICE_NAME`: Identifies your service in Elastic APM
 - `OTEL_EXPORTER_OTLP_ENDPOINT`: The endpoint where telemetry data is sent
 - `OTEL_EXPORTER_OTLP_HEADERS`: Contains authentication information for the endpoint
+- `OTEL_SDK_DISABLED`: Set to 'true' to explicitly disable OpenTelemetry
+
+### Error Handling
+
+The service includes robust error handling for telemetry issues:
+
+1. **Startup Validation**
+   - Required environment variables are checked at server startup
+   - Invalid configuration is detected and clearly reported
+   - The service logs detailed error messages about any configuration issues
+
+2. **Runtime Fallback**
+   - If telemetry encounters errors during rendering, the service will retry without telemetry
+   - Rendering operations continue to work even if telemetry fails
+   - Headers indicate telemetry status with `X-Telemetry-Status: failed` when fallback occurs
+
+3. **Troubleshooting**
+   - Detailed error messages for telemetry configuration issues are logged to the console
+   - The file `src/utils/telemetry-validator.js` contains validation logic that's run at startup
+   - Test coverage ensures validation works properly
 
 ## Extending Telemetry
 
