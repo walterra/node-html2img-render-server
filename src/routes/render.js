@@ -20,7 +20,7 @@ router.post('/', authenticateApiKey, validatePayload, async (req, res, next) => 
   const tracer = getTracer('api');
 
   // Start a span for the API request
-  return tracer.startActiveSpan('api.render', async (span) => {
+  return tracer.startActiveSpan('api.render', async span => {
     try {
       const {
         html,
@@ -207,7 +207,7 @@ router.post('/metadata', authenticateApiKey, async (req, res, next) => {
   const tracer = getTracer('api');
 
   // Start a span for the API request
-  return tracer.startActiveSpan('api.extract_metadata', async (span) => {
+  return tracer.startActiveSpan('api.extract_metadata', async span => {
     try {
       const { image } = req.body;
 

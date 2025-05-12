@@ -16,10 +16,11 @@ const tracers = {};
  */
 function getTracer(component = 'default') {
   if (!tracers[component]) {
-    const fullName = component === 'default' 
-      ? 'node-html2img-render-server' 
-      : `node-html2img-render-server.${component}`;
-    
+    const fullName =
+      component === 'default'
+        ? 'node-html2img-render-server'
+        : `node-html2img-render-server.${component}`;
+
     tracers[component] = trace.getTracer(fullName);
   }
   return tracers[component];
@@ -35,10 +36,11 @@ const meters = {};
  */
 function getMeter(component = 'default') {
   if (!meters[component]) {
-    const fullName = component === 'default' 
-      ? 'node-html2img-render-server' 
-      : `node-html2img-render-server.${component}`;
-    
+    const fullName =
+      component === 'default'
+        ? 'node-html2img-render-server'
+        : `node-html2img-render-server.${component}`;
+
     meters[component] = metrics.getMeter(fullName);
   }
   return meters[component];
@@ -49,23 +51,23 @@ function getMeter(component = 'default') {
  */
 function createRendererMetrics() {
   const meter = getMeter('renderer');
-  
+
   // Initialize counters
   const renderCounter = meter.createCounter('html_render_count', {
     description: 'Count of HTML rendering operations'
   });
-  
+
   // Initialize histograms
   const renderDurationHistogram = meter.createHistogram('html_render_duration_ms', {
     description: 'Duration of HTML rendering operations in milliseconds',
     unit: 'ms'
   });
-  
+
   const screenshotSizeHistogram = meter.createHistogram('screenshot_size_bytes', {
     description: 'Size of generated screenshots in bytes',
     unit: 'By'
   });
-  
+
   return {
     renderCounter,
     renderDurationHistogram,
@@ -85,18 +87,18 @@ const rendererMetrics = createRendererMetrics();
  */
 function recordRenderMetrics(data) {
   const { format, durationMs, sizeBytes, error = false } = data;
-  
+
   // Record render count by format and status
-  rendererMetrics.renderCounter.add(1, { 
-    format, 
-    status: error ? 'error' : 'success' 
+  rendererMetrics.renderCounter.add(1, {
+    format,
+    status: error ? 'error' : 'success'
   });
-  
+
   // Only record duration and size for successful renders
   if (!error) {
     // Record render duration
     rendererMetrics.renderDurationHistogram.record(durationMs, { format });
-    
+
     // Record screenshot size
     rendererMetrics.screenshotSizeHistogram.record(sizeBytes, { format });
   }
@@ -111,9 +113,9 @@ function recordRenderMetrics(data) {
  */
 function createTracedFunction(name, fn, { component = 'default', attributes = {} } = {}) {
   const tracer = getTracer(component);
-  
+
   return async function tracedFn(...args) {
-    return tracer.startActiveSpan(name, async (span) => {
+    return tracer.startActiveSpan(name, async span => {
       try {
         // Add default attributes
         Object.entries(attributes).forEach(([key, value]) => {
@@ -126,7 +128,7 @@ function createTracedFunction(name, fn, { component = 'default', attributes = {}
 
         // Execute the function
         const result = await fn.apply(this, args);
-        
+
         // Mark span as successful
         span.setStatus({ code: SpanStatusCode.OK });
         return result;
@@ -153,14 +155,18 @@ function createTracedFunction(name, fn, { component = 'default', attributes = {}
  * @param {Object} options - Options including component and attributes
  * @returns {Function} - Instrumented middleware function
  */
-function createTracedMiddleware(name, middleware, { component = 'middleware', attributesFn = null } = {}) {
+function createTracedMiddleware(
+  name,
+  middleware,
+  { component = 'middleware', attributesFn = null } = {}
+) {
   const tracer = getTracer(component);
 
   return function tracedMiddleware(req, res, next) {
-    return tracer.startActiveSpan(`middleware.${name}`, async (span) => {
+    return tracer.startActiveSpan(`middleware.${name}`, async span => {
       // Add request attributes - safely handle possibly undefined properties for testing
       span.setAttribute('http.method', req.method || 'UNKNOWN');
-      span.setAttribute('http.url', (req.originalUrl || req.url || ''));
+      span.setAttribute('http.url', req.originalUrl || req.url || '');
       span.setAttribute('http.path', req.path || '');
       span.setAttribute('http.client_ip', req.ip || '');
       span.setAttribute('request.id', (req.headers && req.headers['x-request-id']) || '');
@@ -185,7 +191,7 @@ function createTracedMiddleware(name, middleware, { component = 'middleware', at
       let responseEnded = false;
 
       // Patch res.end to capture response data
-      res.end = function(...args) {
+      res.end = function (...args) {
         if (!responseEnded) {
           responseEnded = true;
           span.setAttribute('http.status_code', res.statusCode);
@@ -198,7 +204,7 @@ function createTracedMiddleware(name, middleware, { component = 'middleware', at
       };
 
       // Set up next function to handle errors
-      const nextWithTracing = (err) => {
+      const nextWithTracing = err => {
         if (err) {
           span.recordException(err);
           span.setAttribute('error.message', err.message);
@@ -277,7 +283,7 @@ function createInstrumentedRouter(moduleName, { express = require('express') } =
     originalMethods[method] = router[method];
 
     // Replace with instrumented version
-    router[method] = function(...args) {
+    router[method] = function (...args) {
       // Extract path and middlewares
       const path = typeof args[0] === 'string' ? args[0] : '*';
       const middlewares = typeof args[0] === 'string' ? args.slice(1) : args;
@@ -296,7 +302,7 @@ function createInstrumentedRouter(moduleName, { express = require('express') } =
         // Create instrumented middleware
         return createTracedMiddleware(spanName, middleware, {
           component: 'router',
-          attributesFn: (req) => ({
+          attributesFn: req => ({
             'router.module': moduleName,
             'router.method': method,
             'router.path': path,

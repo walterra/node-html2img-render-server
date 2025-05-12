@@ -15,7 +15,7 @@ async function getBrowser() {
   const tracer = getTracer('renderer');
 
   // Create a span for browser initialization
-  return await tracer.startActiveSpan('renderer.get_browser', async (span) => {
+  return await tracer.startActiveSpan('renderer.get_browser', async span => {
     try {
       if (!browserInstance) {
         // Add event for browser initialization
@@ -129,7 +129,7 @@ async function renderHTML(params) {
   const tracer = getTracer('renderer');
 
   // Start a parent span for the entire rendering process
-  return tracer.startActiveSpan('renderer.render_html', async (parentSpan) => {
+  return tracer.startActiveSpan('renderer.render_html', async parentSpan => {
     const {
       html,
       css,
@@ -145,9 +145,9 @@ async function renderHTML(params) {
     } = params;
 
     // Add input parameters as span attributes
-    parentSpan.setAttribute('html.size_bytes', (html?.length || 0));
-    parentSpan.setAttribute('css.size_bytes', (css?.length || 0));
-    parentSpan.setAttribute('js.size_bytes', (javascript?.length || 0));
+    parentSpan.setAttribute('html.size_bytes', html?.length || 0);
+    parentSpan.setAttribute('css.size_bytes', css?.length || 0);
+    parentSpan.setAttribute('js.size_bytes', javascript?.length || 0);
     parentSpan.setAttribute('format', format);
     parentSpan.setAttribute('viewport.width', viewport.width);
     parentSpan.setAttribute('viewport.height', viewport.height);
@@ -156,7 +156,9 @@ async function renderHTML(params) {
     parentSpan.setAttribute('wait_for_selector', !!waitForSelector);
     parentSpan.setAttribute('clip_selector', !!clipSelector);
 
-    let browser, context, page = null;
+    let browser,
+      context,
+      page = null;
     let screenshotBuffer, renderingTime, browserVersion;
 
     try {

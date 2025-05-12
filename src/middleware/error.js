@@ -84,7 +84,7 @@ function wrapMiddlewareWithErrorFormat(middleware) {
     const originalNext = next;
 
     // Replace next with a wrapper that formats errors consistently
-    const wrappedNext = (err) => {
+    const wrappedNext = err => {
       if (err) {
         // Make sure error response has the expected format
         const statusCode = err.status || 500;
@@ -112,17 +112,19 @@ function wrapMiddlewareWithErrorFormat(middleware) {
 
 // Create instrumented versions of all middlewares
 const instrumentedErrorHandler = createTracedMiddleware('error_handler', errorHandler, {
-  attributesFn: (req) => ({
+  attributesFn: req => ({
     'error.path': req.path,
     'error.method': req.method
   })
 });
 
-const instrumentedNotFound = wrapMiddlewareWithErrorFormat(createTracedMiddleware('not_found', notFound, {
-  attributesFn: (req) => ({
-    'not_found.url': req.originalUrl
+const instrumentedNotFound = wrapMiddlewareWithErrorFormat(
+  createTracedMiddleware('not_found', notFound, {
+    attributesFn: req => ({
+      'not_found.url': req.originalUrl
+    })
   })
-}));
+);
 
 // Instrumented timeout middleware
 function instrumentedTimeout(timeoutMs = 30000) {
@@ -130,11 +132,13 @@ function instrumentedTimeout(timeoutMs = 30000) {
   const timeoutMiddleware = timeout(timeoutMs);
 
   // Return instrumented version with error formatting
-  return wrapMiddlewareWithErrorFormat(createTracedMiddleware('timeout', timeoutMiddleware, {
-    attributesFn: (req) => ({
-      'timeout.duration_ms': timeoutMs
+  return wrapMiddlewareWithErrorFormat(
+    createTracedMiddleware('timeout', timeoutMiddleware, {
+      attributesFn: req => ({
+        'timeout.duration_ms': timeoutMs
+      })
     })
-  }));
+  );
 }
 
 module.exports = {

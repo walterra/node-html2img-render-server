@@ -14,7 +14,7 @@ async function addAssetsToPage(page, options) {
   const tracer = getTracer('assets');
 
   // Start a span for asset injection
-  return tracer.startActiveSpan('assets.add_to_page', async (span) => {
+  return tracer.startActiveSpan('assets.add_to_page', async span => {
     const { assets, fonts } = options || {};
 
     // Add basic attributes to the span

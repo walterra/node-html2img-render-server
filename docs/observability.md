@@ -212,8 +212,8 @@ async function processData(data) {
 const tracedProcessData = createTracedFunction('data.process', processData, {
   component: 'processor',
   attributes: {
-    'data.type': (data) => data.type,
-    'data.size': (data) => data.size
+    'data.type': data => data.type,
+    'data.size': data => data.size
   }
 });
 
@@ -233,7 +233,7 @@ function validatePayload(req, res, next) {
 
 // Traced version
 const tracedMiddleware = createTracedMiddleware('validate_payload', validatePayload, {
-  attributesFn: (req) => ({
+  attributesFn: req => ({
     'validation.content_length': parseInt(req.headers['content-length'] || '0', 10)
   })
 });
@@ -274,12 +274,14 @@ recordRenderMetrics({
 The service uses these utilities to provide detailed tracing for:
 
 1. **Express Middleware**:
+
    - Authentication
    - Validation
    - Rate limiting
    - Error handling
 
 2. **API Routes**:
+
    - Render endpoint
    - Metadata extraction
 
@@ -325,6 +327,7 @@ Each span includes detailed attributes relevant to its operation:
 The service tracks several custom metrics:
 
 1. **Counters**:
+
    - `html_render_count`: Number of rendering operations by format and status
 
 2. **Histograms**:

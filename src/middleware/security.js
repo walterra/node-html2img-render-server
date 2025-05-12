@@ -194,7 +194,7 @@ function wrapMiddlewareWithErrorFormat(middleware) {
     const originalNext = next;
 
     // Replace next with a wrapper that formats errors consistently
-    const wrappedNext = (err) => {
+    const wrappedNext = err => {
       if (err) {
         // Make sure error response has the expected format
         const statusCode = err.status || 500;
@@ -223,7 +223,7 @@ function wrapMiddlewareWithErrorFormat(middleware) {
 // Create instrumented versions of all middlewares
 const instrumentedAuthenticateApiKey = wrapMiddlewareWithErrorFormat(
   createTracedMiddleware('authenticate_api_key', authenticateApiKey, {
-    attributesFn: (req) => ({
+    attributesFn: req => ({
       'auth.has_key': !!req.query.apiKey
     })
   })
@@ -231,7 +231,7 @@ const instrumentedAuthenticateApiKey = wrapMiddlewareWithErrorFormat(
 
 const instrumentedValidatePayload = wrapMiddlewareWithErrorFormat(
   createTracedMiddleware('validate_payload', validatePayload, {
-    attributesFn: (req) => ({
+    attributesFn: req => ({
       'validation.html_size': req.body.html?.length || 0,
       'validation.has_viewport': !!req.body.viewport,
       'validation.content_length': parseInt(req.headers['content-length'] || '0', 10)
@@ -247,12 +247,13 @@ function instrumentedRateLimit(maxRequests = 60, windowMs = 60 * 1000) {
   // Return the instrumented version with error formatting
   return wrapMiddlewareWithErrorFormat(
     createTracedMiddleware('rate_limit', rateLimitMiddleware, {
-    attributesFn: (req) => ({
-      'rate_limit.max_requests': maxRequests,
-      'rate_limit.window_ms': windowMs,
-      'rate_limit.ip': req.ip
+      attributesFn: req => ({
+        'rate_limit.max_requests': maxRequests,
+        'rate_limit.window_ms': windowMs,
+        'rate_limit.ip': req.ip
+      })
     })
-  }));
+  );
 }
 
 module.exports = {

@@ -70,20 +70,20 @@ describe('Telemetry Utils', () => {
 
   test('getTracer returns a tracer instance with the correct name', () => {
     const { trace } = require('@opentelemetry/api');
-    
+
     const tracer1 = getTracer();
     expect(trace.getTracer).toHaveBeenCalledWith('node-html2img-render-server');
-    
+
     const tracer2 = getTracer('renderer');
     expect(trace.getTracer).toHaveBeenCalledWith('node-html2img-render-server.renderer');
   });
 
   test('getMeter returns a meter instance with the correct name', () => {
     const { metrics } = require('@opentelemetry/api');
-    
+
     const meter1 = getMeter();
     expect(metrics.getMeter).toHaveBeenCalledWith('node-html2img-render-server');
-    
+
     const meter2 = getMeter('api');
     expect(metrics.getMeter).toHaveBeenCalledWith('node-html2img-render-server.api');
   });
@@ -91,34 +91,34 @@ describe('Telemetry Utils', () => {
   test('createTracedFunction wraps a function with tracing', async () => {
     const { trace } = require('@opentelemetry/api');
     const mockSpan = trace.getTracer().startSpan();
-    
+
     // Function to be traced
     const testFn = jest.fn().mockResolvedValue('result');
-    
+
     // Create traced version
     const tracedFn = createTracedFunction('test.operation', testFn, {
       component: 'test',
       attributes: {
         'test.attribute': 'test-value',
-        'dynamic.attribute': (arg1) => arg1
+        'dynamic.attribute': arg1 => arg1
       }
     });
-    
+
     // Call the traced function
     const result = await tracedFn('input-value');
-    
+
     // Original function should be called
     expect(testFn).toHaveBeenCalledWith('input-value');
-    
+
     // Tracer should be created with component name
     expect(trace.getTracer).toHaveBeenCalledWith('node-html2img-render-server.test');
-    
+
     // Span should be created and configured correctly
     expect(mockSpan.setAttribute).toHaveBeenCalledWith('test.attribute', 'test-value');
     expect(mockSpan.setAttribute).toHaveBeenCalledWith('dynamic.attribute', 'input-value');
     expect(mockSpan.setStatus).toHaveBeenCalledWith({ code: 'OK' });
     expect(mockSpan.end).toHaveBeenCalled();
-    
+
     // Function should return original result
     expect(result).toBe('result');
   });
@@ -126,17 +126,17 @@ describe('Telemetry Utils', () => {
   test('createTracedFunction correctly handles errors', async () => {
     const { trace, SpanStatusCode } = require('@opentelemetry/api');
     const mockSpan = trace.getTracer().startSpan();
-    
+
     // Function that throws an error
     const error = new Error('Test error');
     const failingFn = jest.fn().mockRejectedValue(error);
-    
+
     // Create traced version
     const tracedFn = createTracedFunction('test.failing', failingFn);
-    
+
     // Call and expect it to throw
     await expect(tracedFn()).rejects.toThrow('Test error');
-    
+
     // Error should be recorded on the span
     expect(mockSpan.recordException).toHaveBeenCalledWith(error);
     expect(mockSpan.setStatus).toHaveBeenCalledWith({
@@ -218,7 +218,7 @@ describe('Telemetry Utils', () => {
 
     // Create traced middleware
     const tracedMiddleware = createTracedMiddleware('test_middleware', middleware, {
-      attributesFn: (req) => ({ 'test.attr': 'test-value' })
+      attributesFn: req => ({ 'test.attr': 'test-value' })
     });
 
     // Call the middleware
@@ -251,7 +251,7 @@ describe('Telemetry Utils', () => {
       method: 'GET',
       originalUrl: '/test',
       path: '/test',
-      headers: {},  // Add empty headers to avoid errors
+      headers: {}, // Add empty headers to avoid errors
       ip: '127.0.0.1'
     };
     const res = { statusCode: 500, end: jest.fn(), on: jest.fn() };
