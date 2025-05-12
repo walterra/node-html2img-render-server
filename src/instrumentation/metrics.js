@@ -52,13 +52,17 @@ function recordRenderMetrics(data) {
     status: error ? 'error' : 'success'
   });
 
-  // Only record duration and size for successful renders
+  // Only record duration and size for successful renders if they are provided
   if (!error) {
-    // Record render duration
-    rendererMetrics.renderDurationHistogram.record(durationMs, { format });
+    // Record render duration if provided
+    if (typeof durationMs === 'number') {
+      rendererMetrics.renderDurationHistogram.record(durationMs, { format });
+    }
 
-    // Record screenshot size
-    rendererMetrics.screenshotSizeHistogram.record(sizeBytes, { format });
+    // Record screenshot size if provided
+    if (typeof sizeBytes === 'number') {
+      rendererMetrics.screenshotSizeHistogram.record(sizeBytes, { format });
+    }
   }
 }
 
