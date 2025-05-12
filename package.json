@@ -1,6 +1,6 @@
 {
   "name": "node-html2img-render-server",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "A server for converting HTML to images with Playwright - allows direct HTML input and returns screenshots for visual testing",
   "main": "server.js",
   "repository": {

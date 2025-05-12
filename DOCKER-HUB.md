@@ -14,7 +14,7 @@ A service for converting HTML to images with a REST API. It accepts direct HTML,
 - PNG/JPEG format support with quality settings
 - Custom font and image injection
 - API key authentication and rate limiting
-- OpenTelemetry instrumentation
+- OpenTelemetry instrumentation with detailed tracing
 - JSON or binary image response formats
 
 ## Quick Start
@@ -97,8 +97,9 @@ curl -X POST \
 ## Supported Tags
 
 - `latest`: Latest stable release
-- `1.1.0`: Version with OpenTelemetry support
-- `1.0.1`: Initial stable release
+- `1.1.1`: Enhanced OpenTelemetry instrumentation
+- `1.1.0`: Initial OpenTelemetry support
+- `1.0.1`: Maintenance release with Docker improvements
 - `1.0.0`: Initial version
 
 ## License

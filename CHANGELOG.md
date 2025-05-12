@@ -7,11 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.1] - 2025-05-13
+
 ### Changed
 
 - Improved telemetry opt-in behavior with clearer status messages
 - Telemetry no longer logs errors when configuration is missing
 - Docker containers now only load OpenTelemetry when OTEL_EXPORTER_OTLP_ENDPOINT is set
+- Refined instrumentation for better tracing and performance analysis
+- Added unit tests for OpenTelemetry instrumentation
 
 ## [1.1.0] - 2025-05-09
 
