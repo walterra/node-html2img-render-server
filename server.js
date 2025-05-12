@@ -15,22 +15,44 @@ const { validateOtelConfig } = require('./src/utils/telemetry-validator');
 
 // Validate OpenTelemetry configuration
 const otelValidation = validateOtelConfig();
-if (!otelValidation.isValid) {
-  logger.error('OpenTelemetry configuration error:', {
-    errors: otelValidation.messages
+
+// Handle telemetry status
+if (otelValidation.telemetryEnabled) {
+  if (otelValidation.isValid) {
+    logger.info('OpenTelemetry is enabled and properly configured');
+    console.log('\x1b[32m%s\x1b[0m', 'OpenTelemetry is enabled and properly configured');
+
+    if (otelValidation.hasWarnings) {
+      logger.warn('OpenTelemetry configuration warnings:', {
+        warnings: otelValidation.messages
+      });
+      console.warn('\x1b[33m%s\x1b[0m', 'OpenTelemetry Configuration Warnings:');
+      otelValidation.messages.forEach(msg => console.warn('\x1b[33m- %s\x1b[0m', msg));
+    }
+  } else {
+    // This case handles valid configuration with errors
+    logger.error('OpenTelemetry configuration error:', {
+      errors: otelValidation.messages
+    });
+    console.error('\x1b[31m%s\x1b[0m', 'OpenTelemetry Configuration Error:');
+    otelValidation.messages.forEach(msg => console.error('\x1b[31m- %s\x1b[0m', msg));
+    console.error(
+      '\x1b[31m%s\x1b[0m',
+      'Check your .env file or environment variables. Telemetry will be disabled.'
+    );
+  }
+} else {
+  // Telemetry is disabled - log as info, not error
+  logger.info('OpenTelemetry is disabled:', {
+    message:
+      otelValidation.messages.length > 0 ? otelValidation.messages[0] : 'No configuration provided'
   });
-  console.error('\x1b[31m%s\x1b[0m', 'OpenTelemetry Configuration Error:');
-  otelValidation.messages.forEach(msg => console.error('\x1b[31m- %s\x1b[0m', msg));
-  console.error(
-    '\x1b[31m%s\x1b[0m',
-    'Check your .env file or environment variables and restart the server.'
-  );
-} else if (otelValidation.hasWarnings) {
-  logger.warn('OpenTelemetry configuration warnings:', {
-    warnings: otelValidation.messages
-  });
-  console.warn('\x1b[33m%s\x1b[0m', 'OpenTelemetry Configuration Warnings:');
-  otelValidation.messages.forEach(msg => console.warn('\x1b[33m- %s\x1b[0m', msg));
+  console.info('\x1b[36m%s\x1b[0m', 'OpenTelemetry is disabled:');
+  if (otelValidation.messages.length > 0) {
+    console.info('\x1b[36m- %s\x1b[0m', otelValidation.messages[0]);
+  } else {
+    console.info('\x1b[36m- %s\x1b[0m', 'No configuration provided');
+  }
 }
 
 // Initialize Express app

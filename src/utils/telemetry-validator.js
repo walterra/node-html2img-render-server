@@ -12,7 +12,8 @@ function validateOtelConfig() {
   const result = {
     isValid: true,
     messages: [],
-    hasWarnings: false
+    hasWarnings: false,
+    telemetryEnabled: false
   };
 
   // Check if OpenTelemetry is explicitly disabled
@@ -25,6 +26,7 @@ function validateOtelConfig() {
   // Array to collect all validation errors and warnings
   const errors = [];
   const warnings = [];
+  const infos = [];
 
   // Check for required environment variables
   const requiredVars = {
@@ -39,11 +41,17 @@ function validateOtelConfig() {
     }
   }
 
+  // If any required variables are missing, telemetry is considered disabled (opt-in)
   if (missingVars.length > 0) {
-    errors.push(`Missing required OpenTelemetry environment variables: ${missingVars.join(', ')}`);
+    infos.push(`OpenTelemetry is disabled. Missing configuration: ${missingVars.join(', ')}`);
+    result.messages.push(...infos);
+    return result;
   }
 
-  // Validate endpoint format if provided
+  // At this point, all required variables are present, so telemetry is enabled
+  result.telemetryEnabled = true;
+
+  // Validate endpoint format
   if (process.env.OTEL_EXPORTER_OTLP_ENDPOINT) {
     try {
       const url = new URL(process.env.OTEL_EXPORTER_OTLP_ENDPOINT);
@@ -90,6 +98,7 @@ function validateOtelConfig() {
   // Update result status
   if (errors.length > 0) {
     result.isValid = false;
+    result.telemetryEnabled = false;
   }
 
   if (warnings.length > 0) {
