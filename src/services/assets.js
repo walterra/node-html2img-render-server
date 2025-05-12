@@ -1,7 +1,7 @@
 /**
  * Asset handling service for injecting fonts and assets into the page
  */
-const { getTracer, SpanStatusCode } = require('../utils/telemetry');
+const { withTracing, createSpanManager } = require('../instrumentation/wrappers');
 
 /**
  * Adds assets and fonts to a page
@@ -9,28 +9,25 @@ const { getTracer, SpanStatusCode } = require('../utils/telemetry');
  * @param {Object} options - Assets and fonts to add
  * @returns {Promise<void>}
  */
-async function addAssetsToPage(page, options) {
-  // Get tracer for assets component
-  const tracer = getTracer('assets');
+const addAssetsToPage = withTracing({
+  name: 'assets.add_to_page',
+  component: 'assets',
+  attributes: (page, options) => ({
+    'assets.count': options?.assets ? Object.keys(options.assets).length : 0,
+    'fonts.count': options?.fonts ? options.fonts.length : 0
+  })
+})(async function addAssetsToPageImpl(page, options) {
+  const { assets, fonts } = options || {};
+  
+  // Create a span manager for nested spans
+  const spans = createSpanManager({ component: 'assets' });
 
-  // Start a span for asset injection
-  return tracer.startActiveSpan('assets.add_to_page', async span => {
-    const { assets, fonts } = options || {};
-
-    // Add basic attributes to the span
-    span.setAttribute('assets.count', assets ? Object.keys(assets).length : 0);
-    span.setAttribute('fonts.count', fonts ? fonts.length : 0);
-
-    try {
-      // Inject custom assets (images, etc.)
-      if (assets && Object.keys(assets).length > 0) {
-        const assetSpan = tracer.startSpan('assets.setup_interceptor', {
-          parent: span
-        });
-
-        try {
-          assetSpan.setAttribute('assets.count', Object.keys(assets).length);
-
+  try {
+    // Inject custom assets (images, etc.)
+    if (assets && Object.keys(assets).length > 0) {
+      await spans.withSpan('assets.setup_interceptor', 
+        { 'assets.count': Object.keys(assets).length },
+        async (span) => {
           // Collect asset types for metrics
           const assetTypes = {};
           Object.keys(assets).forEach(fileName => {
@@ -40,96 +37,72 @@ async function addAssetsToPage(page, options) {
 
           // Add asset type counts to span
           Object.entries(assetTypes).forEach(([type, count]) => {
-            assetSpan.setAttribute(`assets.type.${type}`, count);
+            span.setAttribute(`assets.type.${type}`, count);
           });
 
           // Set up route interception for assets
           await page.route('**/*', async route => {
-            const routeSpan = tracer.startSpan('assets.route_handler', {
-              parent: assetSpan
-            });
+            const url = route.request().url();
+            const fileName = url.split('/').pop();
 
-            try {
-              const url = route.request().url();
-              const fileName = url.split('/').pop();
+            // Use a nested span for each route request
+            await spans.withSpan('assets.route_handler', 
+              { 
+                'request.url': url,
+                'request.filename': fileName
+              },
+              async (routeSpan) => {
+                // Check if this is one of our assets
+                if (assets[fileName]) {
+                  routeSpan.setAttribute('asset.found', true);
 
-              routeSpan.setAttribute('request.url', url);
-              routeSpan.setAttribute('request.filename', fileName);
+                  try {
+                    const base64Data = assets[fileName];
+                    const mimeType = getMimeType(fileName);
+                    const buffer = Buffer.from(base64Data, 'base64');
 
-              // Check if this is one of our assets
-              if (assets[fileName]) {
-                routeSpan.setAttribute('asset.found', true);
+                    routeSpan.setAttribute('asset.mime_type', mimeType);
+                    routeSpan.setAttribute('asset.size_bytes', buffer.length);
 
-                try {
-                  const base64Data = assets[fileName];
-                  const mimeType = getMimeType(fileName);
-                  const buffer = Buffer.from(base64Data, 'base64');
-
-                  routeSpan.setAttribute('asset.mime_type', mimeType);
-                  routeSpan.setAttribute('asset.size_bytes', buffer.length);
-
-                  // Fulfill the request with our asset data
-                  await route.fulfill({
-                    status: 200,
-                    contentType: mimeType,
-                    body: buffer
-                  });
-
-                  routeSpan.setStatus({ code: SpanStatusCode.OK });
-                } catch (error) {
-                  console.error(`Error serving asset ${fileName}:`, error);
-                  routeSpan.recordException(error);
-                  routeSpan.setAttribute('asset.error', error.message);
-                  routeSpan.setStatus({
-                    code: SpanStatusCode.ERROR,
-                    message: `Error serving asset: ${error.message}`
-                  });
-
+                    // Fulfill the request with our asset data
+                    await route.fulfill({
+                      status: 200,
+                      contentType: mimeType,
+                      body: buffer
+                    });
+                  } catch (error) {
+                    console.error(`Error serving asset ${fileName}:`, error);
+                    routeSpan.setAttribute('asset.error', error.message);
+                    await route.continue();
+                  }
+                } else {
+                  // Not one of our assets, continue normal handling
+                  routeSpan.setAttribute('asset.found', false);
                   await route.continue();
                 }
-              } else {
-                // Not one of our assets, continue normal handling
-                routeSpan.setAttribute('asset.found', false);
-                await route.continue();
               }
-            } finally {
-              routeSpan.end();
-            }
+            );
           });
-
-          assetSpan.setStatus({ code: SpanStatusCode.OK });
-        } catch (error) {
-          assetSpan.recordException(error);
-          assetSpan.setStatus({
-            code: SpanStatusCode.ERROR,
-            message: `Failed to set up asset interceptor: ${error.message}`
-          });
-          throw error;
-        } finally {
-          assetSpan.end();
         }
-      }
+      );
+    }
 
-      // Inject custom fonts
-      if (fonts && fonts.length > 0) {
-        const fontSpan = tracer.startSpan('assets.add_fonts', {
-          parent: span
-        });
-
-        try {
-          fontSpan.setAttribute('fonts.count', fonts.length);
-
+    // Inject custom fonts
+    if (fonts && fonts.length > 0) {
+      await spans.withSpan('assets.add_fonts', 
+        { 'fonts.count': fonts.length },
+        async (span) => {
           // Add font details to span
           fonts.forEach((font, index) => {
-            fontSpan.setAttribute(`font.${index}.name`, font.name);
-            fontSpan.setAttribute(`font.${index}.weight`, font.weight || 'normal');
-            fontSpan.setAttribute(`font.${index}.style`, font.style || 'normal');
+            span.setAttribute(`font.${index}.name`, font.name);
+            span.setAttribute(`font.${index}.weight`, font.weight || 'normal');
+            span.setAttribute(`font.${index}.style`, font.style || 'normal');
             if (font.data) {
-              fontSpan.setAttribute(`font.${index}.size_bytes`, font.data.length);
+              span.setAttribute(`font.${index}.size_bytes`, font.data.length);
             }
           });
 
-          fontSpan.addEvent('fonts.css_generation.start');
+          spans.addEvent('fonts.css_generation.start');
 
           // Create CSS for all the fonts
           const fontFaceCSS = fonts
@@ -146,47 +119,26 @@ async function addAssetsToPage(page, options) {
             })
             .join('\n');
 
-          fontSpan.addEvent('fonts.css_generation.complete');
-          fontSpan.setAttribute('fonts.css_size_bytes', fontFaceCSS.length);
+          spans.addEvent('fonts.css_generation.complete');
+          span.setAttribute('fonts.css_size_bytes', fontFaceCSS.length);
 
           // Add the font-face declarations to the page
-          fontSpan.addEvent('fonts.add_style_tag.start');
+          spans.addEvent('fonts.add_style_tag.start');
           await page.addStyleTag({ content: fontFaceCSS });
-          fontSpan.addEvent('fonts.add_style_tag.complete');
+          spans.addEvent('fonts.add_style_tag.complete');
 
           // Wait a brief moment to allow any font processing
-          fontSpan.addEvent('fonts.processing.start');
+          spans.addEvent('fonts.processing.start');
           await page.waitForTimeout(50);
-          fontSpan.addEvent('fonts.processing.complete');
-
-          fontSpan.setStatus({ code: SpanStatusCode.OK });
-        } catch (error) {
-          fontSpan.recordException(error);
-          fontSpan.setStatus({
-            code: SpanStatusCode.ERROR,
-            message: `Failed to add fonts: ${error.message}`
-          });
-          throw error;
-        } finally {
-          fontSpan.end();
+          spans.addEvent('fonts.processing.complete');
         }
-      }
-
-      span.setStatus({ code: SpanStatusCode.OK });
-    } catch (error) {
-      // Log and continue if there are issues with assets
-      console.error('Error adding assets to page:', error);
-      span.recordException(error);
-      span.setAttribute('error.message', error.message);
-      span.setStatus({
-        code: SpanStatusCode.ERROR,
-        message: `Error adding assets to page: ${error.message}`
-      });
-    } finally {
-      span.end();
+      );
     }
-  });
-}
+  } catch (error) {
+    // Log and continue if there are issues with assets
+    console.error('Error adding assets to page:', error);
+  }
+});
 
 /**
  * Determine MIME type from file extension

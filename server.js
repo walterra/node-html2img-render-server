@@ -11,7 +11,7 @@ const morgan = require('morgan');
 // Import middleware
 const errorMiddleware = require('./src/middleware/error');
 const securityMiddleware = require('./src/middleware/security');
-const { validateOtelConfig } = require('./src/utils/telemetry-validator');
+const { validateOtelConfig } = require('./src/instrumentation'); // Updated import
 
 // Get instrumented versions of middlewares
 const { errorHandler, notFound, timeout, logger } = errorMiddleware.default;
