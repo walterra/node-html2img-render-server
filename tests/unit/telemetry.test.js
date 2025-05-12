@@ -1,7 +1,14 @@
 /**
  * Tests for telemetry utilities
  */
-const { getTracer, getMeter, createTracedFunction, recordRenderMetrics } = require('../../src/utils/telemetry');
+const {
+  getTracer,
+  getMeter,
+  createTracedFunction,
+  createTracedMiddleware,
+  createInstrumentedRouter,
+  recordRenderMetrics
+} = require('../../src/utils/telemetry');
 
 // Mock OpenTelemetry API
 jest.mock('@opentelemetry/api', () => {
@@ -144,46 +151,185 @@ describe('Telemetry Utils', () => {
     const mockMeter = metrics.getMeter();
     const mockCounter = mockMeter.createCounter();
     const mockHistogram = mockMeter.createHistogram();
-    
+
     // Record successful render metrics
     recordRenderMetrics({
       format: 'png',
       durationMs: 100,
       sizeBytes: 50000
     });
-    
+
     // Counter should be incremented with correct attributes
     expect(mockCounter.add).toHaveBeenCalledWith(1, {
       format: 'png',
       status: 'success'
     });
-    
+
     // Duration should be recorded in histogram
     expect(mockHistogram.record).toHaveBeenCalledWith(100, {
       format: 'png'
     });
-    
+
     // Size should be recorded in histogram
     expect(mockHistogram.record).toHaveBeenCalledWith(50000, {
       format: 'png'
     });
-    
+
     // Clear calls
     jest.clearAllMocks();
-    
+
     // Record error metrics
     recordRenderMetrics({
       format: 'jpeg',
       error: true
     });
-    
+
     // Counter should be incremented with error status
     expect(mockCounter.add).toHaveBeenCalledWith(1, {
       format: 'jpeg',
       status: 'error'
     });
-    
+
     // Histograms should not be recorded for errors
     expect(mockHistogram.record).not.toHaveBeenCalled();
+  });
+
+  test('createTracedMiddleware wraps Express middleware with tracing', async () => {
+    const { trace, SpanStatusCode } = require('@opentelemetry/api');
+    const mockSpan = trace.getTracer().startSpan();
+
+    // Mock Express objects
+    const req = {
+      method: 'GET',
+      originalUrl: '/test',
+      path: '/test',
+      ip: '127.0.0.1',
+      headers: { 'x-request-id': 'test-id' }
+    };
+    const res = {
+      statusCode: 200,
+      end: jest.fn(),
+      on: jest.fn()
+    };
+    const next = jest.fn();
+
+    // Mock middleware function
+    const middleware = jest.fn((req, res, next) => next());
+
+    // Create traced middleware
+    const tracedMiddleware = createTracedMiddleware('test_middleware', middleware, {
+      attributesFn: (req) => ({ 'test.attr': 'test-value' })
+    });
+
+    // Call the middleware
+    tracedMiddleware(req, res, next);
+
+    // Original middleware should be called
+    expect(middleware).toHaveBeenCalled();
+
+    // Span should have attributes
+    expect(mockSpan.setAttribute).toHaveBeenCalledWith('http.method', 'GET');
+    expect(mockSpan.setAttribute).toHaveBeenCalledWith('http.url', '/test');
+    expect(mockSpan.setAttribute).toHaveBeenCalledWith('test.attr', 'test-value');
+
+    // Simulate response end
+    const endCallback = res.end;
+    endCallback();
+
+    // Span should be ended with success status
+    expect(mockSpan.setAttribute).toHaveBeenCalledWith('http.status_code', 200);
+    expect(mockSpan.setStatus).toHaveBeenCalledWith({ code: SpanStatusCode.OK });
+    expect(mockSpan.end).toHaveBeenCalled();
+  });
+
+  test('createTracedMiddleware handles errors correctly', () => {
+    const { trace, SpanStatusCode } = require('@opentelemetry/api');
+    const mockSpan = trace.getTracer().startSpan();
+
+    // Mock Express objects
+    const req = {
+      method: 'GET',
+      originalUrl: '/test',
+      path: '/test',
+      headers: {},  // Add empty headers to avoid errors
+      ip: '127.0.0.1'
+    };
+    const res = { statusCode: 500, end: jest.fn(), on: jest.fn() };
+    const next = jest.fn();
+
+    // Create an error
+    const error = new Error('Test middleware error');
+
+    // Mock middleware that calls next with an error
+    const middleware = jest.fn((req, res, next) => next(error));
+
+    // Create traced middleware
+    const tracedMiddleware = createTracedMiddleware('error_middleware', middleware);
+
+    // Call the middleware
+    tracedMiddleware(req, res, next);
+
+    // Original middleware should be called
+    expect(middleware).toHaveBeenCalled();
+
+    // Span should record error
+    expect(mockSpan.recordException).toHaveBeenCalledWith(error);
+    expect(mockSpan.setAttribute).toHaveBeenCalledWith('error.message', error.message);
+    expect(mockSpan.setStatus).toHaveBeenCalledWith({
+      code: SpanStatusCode.ERROR,
+      message: error.message
+    });
+    expect(mockSpan.end).toHaveBeenCalled();
+
+    // Next should be called with error
+    expect(next).toHaveBeenCalledWith(error);
+  });
+
+  test('createInstrumentedRouter returns a router with instrumented methods', () => {
+    // Create a proper mock for the router methods
+    const getMock = jest.fn();
+    const postMock = jest.fn();
+    const putMock = jest.fn();
+
+    // Mock Express router
+    const mockRouter = {
+      get: getMock,
+      post: postMock,
+      put: putMock,
+      delete: jest.fn(),
+      patch: jest.fn(),
+      all: jest.fn(),
+      use: jest.fn()
+    };
+
+    // Mock Express module
+    const mockExpress = {
+      Router: jest.fn().mockReturnValue(mockRouter)
+    };
+
+    // Create instrumented router
+    const router = createInstrumentedRouter('test_module', { express: mockExpress });
+
+    // Express.Router should be called
+    expect(mockExpress.Router).toHaveBeenCalled();
+
+    // Router methods should be available
+    expect(router.get).toBeDefined();
+    expect(router.post).toBeDefined();
+
+    // Test router method wrapping
+    const mockHandler = jest.fn();
+    router.get('/test', mockHandler);
+
+    // Original router.get should be called
+    expect(getMock).toHaveBeenCalled();
+
+    // Path should be preserved
+    const firstCallArg = getMock.mock.calls[0][0];
+    expect(firstCallArg).toBe('/test');
+
+    // Handler should be wrapped but still a function
+    const wrappedHandler = getMock.mock.calls[0][1];
+    expect(typeof wrappedHandler).toBe('function');
   });
 });

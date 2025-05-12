@@ -1,4 +1,5 @@
 const winston = require('winston');
+const { createTracedMiddleware } = require('../utils/telemetry');
 
 // Create logger instance
 const logger = winston.createLogger({
@@ -76,10 +77,79 @@ function timeout(timeout = 30000) {
   };
 }
 
+// Create a wrapper to ensure consistent error response format
+function wrapMiddlewareWithErrorFormat(middleware) {
+  return (req, res, next) => {
+    // Save the original next function
+    const originalNext = next;
+
+    // Replace next with a wrapper that formats errors consistently
+    const wrappedNext = (err) => {
+      if (err) {
+        // Make sure error response has the expected format
+        const statusCode = err.status || 500;
+
+        // Only modify the response if it hasn't been sent yet
+        if (!res.headersSent) {
+          res.status(statusCode).json({
+            error: {
+              message: err.message,
+              status: statusCode,
+              ...(process.env.NODE_ENV !== 'production' && err.stack ? { stack: err.stack } : {})
+            }
+          });
+          return;
+        }
+      }
+      // Call the original next function
+      originalNext(err);
+    };
+
+    // Call the middleware with our wrapped next function
+    middleware(req, res, wrappedNext);
+  };
+}
+
+// Create instrumented versions of all middlewares
+const instrumentedErrorHandler = createTracedMiddleware('error_handler', errorHandler, {
+  attributesFn: (req) => ({
+    'error.path': req.path,
+    'error.method': req.method
+  })
+});
+
+const instrumentedNotFound = wrapMiddlewareWithErrorFormat(createTracedMiddleware('not_found', notFound, {
+  attributesFn: (req) => ({
+    'not_found.url': req.originalUrl
+  })
+}));
+
+// Instrumented timeout middleware
+function instrumentedTimeout(timeoutMs = 30000) {
+  // Get the original middleware
+  const timeoutMiddleware = timeout(timeoutMs);
+
+  // Return instrumented version with error formatting
+  return wrapMiddlewareWithErrorFormat(createTracedMiddleware('timeout', timeoutMiddleware, {
+    attributesFn: (req) => ({
+      'timeout.duration_ms': timeoutMs
+    })
+  }));
+}
+
 module.exports = {
   ApiError,
   errorHandler,
   notFound,
   timeout,
-  logger
+  logger,
+
+  // By default export instrumented versions
+  default: {
+    errorHandler: instrumentedErrorHandler,
+    notFound: instrumentedNotFound,
+    timeout: instrumentedTimeout,
+    ApiError,
+    logger
+  }
 };

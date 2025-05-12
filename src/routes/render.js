@@ -1,9 +1,14 @@
 const express = require('express');
-const router = express.Router();
 const { renderHTML } = require('../services/renderer');
-const { validatePayload, authenticateApiKey } = require('../middleware/security');
+const security = require('../middleware/security');
 const { ApiError } = require('../middleware/error');
-const { getTracer, SpanStatusCode } = require('../utils/telemetry');
+const { createInstrumentedRouter, getTracer, SpanStatusCode } = require('../utils/telemetry');
+
+// Get instrumented versions of middlewares
+const { validatePayload, authenticateApiKey } = security.default;
+
+// Create an instrumented router for better tracing
+const router = createInstrumentedRouter('render');
 
 /**
  * @route POST /render
@@ -65,7 +70,14 @@ router.post('/', authenticateApiKey, validatePayload, async (req, res, next) => 
 
         const error = new ApiError('Format must be either "png" or "jpeg"', 400);
         span.end();
-        return next(error);
+
+        // Return a formatted error response directly
+        return res.status(400).json({
+          error: {
+            message: 'Format must be either "png" or "jpeg"',
+            status: 400
+          }
+        });
       }
 
       // Validate JPEG quality if provided
@@ -78,7 +90,14 @@ router.post('/', authenticateApiKey, validatePayload, async (req, res, next) => 
 
         const error = new ApiError('JPEG quality must be between 1 and 100', 400);
         span.end();
-        return next(error);
+
+        // Return a formatted error response directly
+        return res.status(400).json({
+          error: {
+            message: 'JPEG quality must be between 1 and 100',
+            status: 400
+          }
+        });
       }
 
       span.addEvent('request.validation.complete');

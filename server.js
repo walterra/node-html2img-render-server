@@ -9,9 +9,13 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 
 // Import middleware
-const { errorHandler, notFound, timeout, logger } = require('./src/middleware/error');
-const { rateLimit } = require('./src/middleware/security');
+const errorMiddleware = require('./src/middleware/error');
+const securityMiddleware = require('./src/middleware/security');
 const { validateOtelConfig } = require('./src/utils/telemetry-validator');
+
+// Get instrumented versions of middlewares
+const { errorHandler, notFound, timeout, logger } = errorMiddleware.default;
+const { rateLimit } = securityMiddleware.default;
 
 // Validate OpenTelemetry configuration
 const otelValidation = validateOtelConfig();
@@ -71,6 +75,21 @@ app.use(timeout(requestTimeout));
 app.use(rateLimit(rateLimitMax, rateLimitWindowMs));
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ extended: true }));
+
+// Add custom middleware to handle JSON parsing errors
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    // JSON parsing error
+    return res.status(400).json({
+      error: {
+        message: 'Invalid JSON: ' + err.message,
+        status: 400
+      }
+    });
+  }
+  next(err); // Pass to other error handlers
+});
+
 app.use(
   morgan('combined', {
     stream: { write: message => logger.info(message.trim()) }
