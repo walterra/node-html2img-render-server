@@ -2,6 +2,7 @@ const { chromium } = require('playwright');
 const { PNG } = require('pngjs');
 const { v4: uuidv4 } = require('uuid');
 const { addAssetsToPage } = require('./assets');
+const { getTracer, SpanStatusCode, recordRenderMetrics } = require('../utils/telemetry');
 
 // Cache for the browser instance to improve performance
 let browserInstance = null;
@@ -10,20 +11,48 @@ let browserInstance = null;
  * Gets a browser instance, creating one if it doesn't exist
  */
 async function getBrowser() {
-  if (!browserInstance) {
+  // Get a tracer for browser operations
+  const tracer = getTracer('renderer');
+
+  // Create a span for browser initialization
+  return await tracer.startActiveSpan('renderer.get_browser', async (span) => {
     try {
-      // Try with environment variable for Docker environments
-      process.env.PLAYWRIGHT_BROWSERS_PATH =
-        process.env.PLAYWRIGHT_BROWSERS_PATH || '/home/renderuser/.cache/ms-playwright';
-      browserInstance = await chromium.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
-      });
-    } catch (error) {
-      console.error('Error launching browser:', error.message);
+      if (!browserInstance) {
+        // Add event for browser initialization
+        span.addEvent('browser.init.start');
+
+        try {
+          // Try with environment variable for Docker environments
+          process.env.PLAYWRIGHT_BROWSERS_PATH =
+            process.env.PLAYWRIGHT_BROWSERS_PATH || '/home/renderuser/.cache/ms-playwright';
+
+          browserInstance = await chromium.launch({
+            headless: true,
+            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+          });
+
+          // Add browser info to span
+          span.setAttribute('browser.instance', 'created');
+          span.addEvent('browser.init.complete');
+        } catch (error) {
+          console.error('Error launching browser:', error.message);
+          span.recordException(error);
+          span.setStatus({
+            code: SpanStatusCode.ERROR,
+            message: `Failed to launch browser: ${error.message}`
+          });
+          throw error;
+        }
+      } else {
+        span.setAttribute('browser.instance', 'cached');
+      }
+
+      span.setStatus({ code: SpanStatusCode.OK });
+      return browserInstance;
+    } finally {
+      span.end();
     }
-  }
-  return browserInstance;
+  });
 }
 
 /**
