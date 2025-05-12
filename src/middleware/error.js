@@ -81,7 +81,7 @@ function timeout(timeout = 30000) {
 // Create instrumented versions of all middlewares
 const instrumentedErrorHandler = withTracedMiddleware({
   name: 'error_handler',
-  attributesFn: (req) => ({
+  attributesFn: req => ({
     'error.path': req.path,
     'error.method': req.method
   })
@@ -89,8 +89,8 @@ const instrumentedErrorHandler = withTracedMiddleware({
 
 const instrumentedNotFound = wrapMiddlewareWithErrorFormat(
   withTracedMiddleware({
-    name: 'not_found', 
-    attributesFn: (req) => ({
+    name: 'not_found',
+    attributesFn: req => ({
       'not_found.url': req.originalUrl
     })
   })(notFound)
@@ -105,7 +105,7 @@ function instrumentedTimeout(timeoutMs = 30000) {
   return wrapMiddlewareWithErrorFormat(
     withTracedMiddleware({
       name: 'timeout',
-      attributesFn: (req) => ({
+      attributesFn: req => ({
         'timeout.duration_ms': timeoutMs
       })
     })(timeoutMiddleware)

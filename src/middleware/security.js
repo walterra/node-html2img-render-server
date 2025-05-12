@@ -192,7 +192,7 @@ function isSafeUrl(url) {
 const instrumentedAuthenticateApiKey = wrapMiddlewareWithErrorFormat(
   withTracedMiddleware({
     name: 'authenticate_api_key',
-    attributesFn: (req) => ({
+    attributesFn: req => ({
       'auth.has_key': !!req.query.apiKey
     })
   })(authenticateApiKey)
@@ -201,7 +201,7 @@ const instrumentedAuthenticateApiKey = wrapMiddlewareWithErrorFormat(
 const instrumentedValidatePayload = wrapMiddlewareWithErrorFormat(
   withTracedMiddleware({
     name: 'validate_payload',
-    attributesFn: (req) => ({
+    attributesFn: req => ({
       'validation.html_size': req.body.html?.length || 0,
       'validation.has_viewport': !!req.body.viewport,
       'validation.content_length': parseInt(req.headers['content-length'] || '0', 10)
@@ -218,7 +218,7 @@ function instrumentedRateLimit(maxRequests = 60, windowMs = 60 * 1000) {
   return wrapMiddlewareWithErrorFormat(
     withTracedMiddleware({
       name: 'rate_limit',
-      attributesFn: (req) => ({
+      attributesFn: req => ({
         'rate_limit.max_requests': maxRequests,
         'rate_limit.window_ms': windowMs,
         'rate_limit.ip': req.ip

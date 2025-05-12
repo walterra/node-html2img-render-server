@@ -9,23 +9,23 @@ const { getMeter } = require('./telemetry');
  */
 function createRendererMetrics() {
   const meter = getMeter('renderer');
-  
+
   // Initialize counters
   const renderCounter = meter.createCounter('html_render_count', {
     description: 'Count of HTML rendering operations'
   });
-  
+
   // Initialize histograms
   const renderDurationHistogram = meter.createHistogram('html_render_duration_ms', {
     description: 'Duration of HTML rendering operations in milliseconds',
     unit: 'ms'
   });
-  
+
   const screenshotSizeHistogram = meter.createHistogram('screenshot_size_bytes', {
     description: 'Size of generated screenshots in bytes',
     unit: 'By'
   });
-  
+
   return {
     renderCounter,
     renderDurationHistogram,
@@ -45,18 +45,18 @@ const rendererMetrics = createRendererMetrics();
  */
 function recordRenderMetrics(data) {
   const { format, durationMs, sizeBytes, error = false } = data;
-  
+
   // Record render count by format and status
-  rendererMetrics.renderCounter.add(1, { 
-    format, 
-    status: error ? 'error' : 'success' 
+  rendererMetrics.renderCounter.add(1, {
+    format,
+    status: error ? 'error' : 'success'
   });
-  
+
   // Only record duration and size for successful renders
   if (!error) {
     // Record render duration
     rendererMetrics.renderDurationHistogram.record(durationMs, { format });
-    
+
     // Record screenshot size
     rendererMetrics.screenshotSizeHistogram.record(sizeBytes, { format });
   }

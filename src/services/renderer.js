@@ -2,10 +2,7 @@ const { chromium } = require('playwright');
 const { PNG } = require('pngjs');
 const { v4: uuidv4 } = require('uuid');
 const { addAssetsToPage } = require('./assets');
-const { 
-  withTracing, 
-  createSpanManager 
-} = require('../instrumentation/wrappers');
+const { withTracing, createSpanManager } = require('../instrumentation/wrappers');
 const { recordRenderMetrics } = require('../instrumentation/metrics');
 
 // Cache for the browser instance to improve performance
@@ -33,7 +30,7 @@ const getBrowser = withTracing({
       throw error;
     }
   }
-  
+
   return browserInstance;
 });
 
@@ -112,17 +109,17 @@ const embedMetadataInImage = withTracing({
 const renderHTML = withTracing({
   name: 'renderer.render_html',
   component: 'renderer',
-  attributes: (params) => ({
+  attributes: params => ({
     'html.size_bytes': params.html?.length || 0,
     'css.size_bytes': params.css?.length || 0,
     'js.size_bytes': params.javascript?.length || 0,
-    'format': params.format || 'png',
+    format: params.format || 'png',
     'viewport.width': params.viewport?.width || 1280,
     'viewport.height': params.viewport?.height || 720,
     'viewport.scale': params.viewport?.deviceScaleFactor || 1,
-    'has_assets': !!(params.assets || params.fonts),
-    'wait_for_selector': !!params.waitForSelector,
-    'clip_selector': !!params.clipSelector
+    has_assets: !!(params.assets || params.fonts),
+    wait_for_selector: !!params.waitForSelector,
+    clip_selector: !!params.clipSelector
   })
 })(async function renderHTMLImpl(params) {
   const {
@@ -139,9 +136,11 @@ const renderHTML = withTracing({
     quality = 90 // JPEG quality (1-100)
   } = params;
 
-  let browser, context, page = null;
+  let browser,
+    context,
+    page = null;
   let screenshotBuffer, renderingTime, browserVersion;
-  
+
   // Create span manager for nested spans
   const spans = createSpanManager({ component: 'renderer' });
 
@@ -150,17 +149,21 @@ const renderHTML = withTracing({
     browser = await getBrowser();
 
     // Create browser context
-    context = await spans.withSpan('renderer.create_context', {
-      'viewport.width': viewport.width,
-      'viewport.height': viewport.height,
-      'viewport.scale': viewport.deviceScaleFactor || 1
-    }, async () => {
-      return browser.newContext({
-        viewport,
-        deviceScaleFactor: viewport.deviceScaleFactor || 1,
-        userAgent: 'html2img-render-server/1.0.1'
-      });
-    });
+    context = await spans.withSpan(
+      'renderer.create_context',
+      {
+        'viewport.width': viewport.width,
+        'viewport.height': viewport.height,
+        'viewport.scale': viewport.deviceScaleFactor || 1
+      },
+      async () => {
+        return browser.newContext({
+          viewport,
+          deviceScaleFactor: viewport.deviceScaleFactor || 1,
+          userAgent: 'html2img-render-server/1.0.1'
+        });
+      }
+    );
 
     // Create page
     page = await spans.withSpan('renderer.create_page', {}, async () => {
@@ -168,17 +171,21 @@ const renderHTML = withTracing({
     });
 
     // Set HTML content
-    await spans.withSpan('renderer.set_content', {
-      'content.size_bytes': createHTMLContent({ html, css, javascript }).length
-    }, async (span) => {
-      spans.addEvent('content.generate.start');
-      const htmlContent = createHTMLContent({ html, css, javascript });
-      spans.addEvent('content.generate.complete');
+    await spans.withSpan(
+      'renderer.set_content',
+      {
+        'content.size_bytes': createHTMLContent({ html, css, javascript }).length
+      },
+      async span => {
+        spans.addEvent('content.generate.start');
+        const htmlContent = createHTMLContent({ html, css, javascript });
+        spans.addEvent('content.generate.complete');
 
-      spans.addEvent('content.load.start');
-      await page.setContent(htmlContent, { waitUntil: 'networkidle' });
-      spans.addEvent('content.load.complete');
-    });
+        spans.addEvent('content.load.start');
+        await page.setContent(htmlContent, { waitUntil: 'networkidle' });
+        spans.addEvent('content.load.complete');
+      }
+    );
 
     // Add assets and fonts if provided
     if (assets || fonts) {
@@ -187,91 +194,99 @@ const renderHTML = withTracing({
 
     // Wait for selector if specified
     if (waitForSelector) {
-      await spans.withSpan('renderer.wait_for_selector', {
-        'selector': waitForSelector
-      }, async (span) => {
-        spans.addEvent('wait.start');
-        await page.waitForSelector(waitForSelector, { timeout: 5000 });
-        spans.addEvent('wait.complete');
-      });
+      await spans.withSpan(
+        'renderer.wait_for_selector',
+        {
+          selector: waitForSelector
+        },
+        async span => {
+          spans.addEvent('wait.start');
+          await page.waitForSelector(waitForSelector, { timeout: 5000 });
+          spans.addEvent('wait.complete');
+        }
+      );
     }
 
     // Take screenshot
-    const screenshotData = await spans.withSpan('renderer.take_screenshot', {
-      'format': format,
-      'quality': format === 'jpeg' ? quality : undefined
-    }, async (span) => {
-      const startTime = Date.now();
-      
-      spans.addEvent('screenshot.prepare.start');
+    const screenshotData = await spans.withSpan(
+      'renderer.take_screenshot',
+      {
+        format: format,
+        quality: format === 'jpeg' ? quality : undefined
+      },
+      async span => {
+        const startTime = Date.now();
 
-      const screenshotOptions = {
-        type: format === 'jpeg' ? 'jpeg' : 'png',
-        fullPage: !clipSelector,
-        omitBackground: false
-      };
+        spans.addEvent('screenshot.prepare.start');
 
-      // Add quality option for JPEG format
-      if (format === 'jpeg') {
-        screenshotOptions.quality = quality;
-        span.setAttribute('jpeg.quality', quality);
-      }
+        const screenshotOptions = {
+          type: format === 'jpeg' ? 'jpeg' : 'png',
+          fullPage: !clipSelector,
+          omitBackground: false
+        };
 
-      // Clip to selector if specified
-      if (clipSelector) {
-        spans.addEvent('clip.lookup.start');
-        
-        try {
-          const element = await page.$(clipSelector);
-          if (element) {
-            const boundingBox = await element.boundingBox();
-            if (boundingBox) {
-              screenshotOptions.clip = boundingBox;
-              delete screenshotOptions.fullPage;
+        // Add quality option for JPEG format
+        if (format === 'jpeg') {
+          screenshotOptions.quality = quality;
+          span.setAttribute('jpeg.quality', quality);
+        }
 
-              span.setAttribute('clip.found', true);
-              span.setAttribute('clip.x', boundingBox.x);
-              span.setAttribute('clip.y', boundingBox.y);
-              span.setAttribute('clip.width', boundingBox.width);
-              span.setAttribute('clip.height', boundingBox.height);
+        // Clip to selector if specified
+        if (clipSelector) {
+          spans.addEvent('clip.lookup.start');
+
+          try {
+            const element = await page.$(clipSelector);
+            if (element) {
+              const boundingBox = await element.boundingBox();
+              if (boundingBox) {
+                screenshotOptions.clip = boundingBox;
+                delete screenshotOptions.fullPage;
+
+                span.setAttribute('clip.found', true);
+                span.setAttribute('clip.x', boundingBox.x);
+                span.setAttribute('clip.y', boundingBox.y);
+                span.setAttribute('clip.width', boundingBox.width);
+                span.setAttribute('clip.height', boundingBox.height);
+              } else {
+                span.setAttribute('clip.found', false);
+                span.setAttribute('clip.error', 'No bounding box');
+              }
             } else {
               span.setAttribute('clip.found', false);
-              span.setAttribute('clip.error', 'No bounding box');
+              span.setAttribute('clip.error', 'Element not found');
             }
-          } else {
-            span.setAttribute('clip.found', false);
-            span.setAttribute('clip.error', 'Element not found');
+          } catch (error) {
+            console.error(`Error clipping to selector ${clipSelector}:`, error);
+            span.setAttribute('clip.error', error.message);
           }
-        } catch (error) {
-          console.error(`Error clipping to selector ${clipSelector}:`, error);
-          span.setAttribute('clip.error', error.message);
-        }
-        
-        spans.addEvent('clip.lookup.complete');
-      }
 
-      spans.addEvent('screenshot.capture.start');
-      const buffer = await page.screenshot(screenshotOptions);
-      spans.addEvent('screenshot.capture.complete');
-      
-      const captureTime = Date.now() - startTime;
-      
-      return {
-        buffer,
-        captureTime,
-        screenshotOptions
-      };
-    });
-    
+          spans.addEvent('clip.lookup.complete');
+        }
+
+        spans.addEvent('screenshot.capture.start');
+        const buffer = await page.screenshot(screenshotOptions);
+        spans.addEvent('screenshot.capture.complete');
+
+        const captureTime = Date.now() - startTime;
+
+        return {
+          buffer,
+          captureTime,
+          screenshotOptions
+        };
+      }
+    );
+
     screenshotBuffer = screenshotData.buffer;
     renderingTime = screenshotData.captureTime;
 
     // Get browser version and create metadata
     browserVersion = await browser.version();
-    
+
     // Generate a unique ID for reference
     const screenshotId = uuidv4();
-    
+
     // Create metadata
     const metadata = {
       renderedAt: new Date().toISOString(),

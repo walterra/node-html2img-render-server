@@ -26,7 +26,7 @@ function createInstrumentedRouter(moduleName, { express = require('express') } =
     originalMethods[method] = router[method];
 
     // Replace with instrumented version
-    router[method] = function(...args) {
+    router[method] = function (...args) {
       // Extract path and middlewares
       const path = typeof args[0] === 'string' ? args[0] : '*';
       const middlewares = typeof args[0] === 'string' ? args.slice(1) : args;
@@ -46,7 +46,7 @@ function createInstrumentedRouter(moduleName, { express = require('express') } =
         return withTracedMiddleware({
           name: spanName,
           component: 'router',
-          attributesFn: (req) => ({
+          attributesFn: req => ({
             'router.module': moduleName,
             'router.method': method,
             'router.path': path,
@@ -77,7 +77,7 @@ function wrapMiddlewareWithErrorFormat(middleware) {
     const originalNext = next;
 
     // Replace next with a wrapper that formats errors consistently
-    const wrappedNext = (err) => {
+    const wrappedNext = err => {
       if (err) {
         // Make sure error response has the expected format
         const statusCode = err.status || 500;

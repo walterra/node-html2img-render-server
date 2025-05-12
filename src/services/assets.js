@@ -18,16 +18,17 @@ const addAssetsToPage = withTracing({
   })
 })(async function addAssetsToPageImpl(page, options) {
   const { assets, fonts } = options || {};
-  
+
   // Create a span manager for nested spans
   const spans = createSpanManager({ component: 'assets' });
 
   try {
     // Inject custom assets (images, etc.)
     if (assets && Object.keys(assets).length > 0) {
-      await spans.withSpan('assets.setup_interceptor', 
+      await spans.withSpan(
+        'assets.setup_interceptor',
         { 'assets.count': Object.keys(assets).length },
-        async (span) => {
+        async span => {
           // Collect asset types for metrics
           const assetTypes = {};
           Object.keys(assets).forEach(fileName => {
@@ -46,12 +47,13 @@ const addAssetsToPage = withTracing({
             const fileName = url.split('/').pop();
 
             // Use a nested span for each route request
-            await spans.withSpan('assets.route_handler', 
-              { 
+            await spans.withSpan(
+              'assets.route_handler',
+              {
                 'request.url': url,
                 'request.filename': fileName
               },
-              async (routeSpan) => {
+              async routeSpan => {
                 // Check if this is one of our assets
                 if (assets[fileName]) {
                   routeSpan.setAttribute('asset.found', true);
@@ -89,25 +91,23 @@ const addAssetsToPage = withTracing({
 
     // Inject custom fonts
     if (fonts && fonts.length > 0) {
-      await spans.withSpan('assets.add_fonts', 
-        { 'fonts.count': fonts.length },
-        async (span) => {
-          // Add font details to span
-          fonts.forEach((font, index) => {
-            span.setAttribute(`font.${index}.name`, font.name);
-            span.setAttribute(`font.${index}.weight`, font.weight || 'normal');
-            span.setAttribute(`font.${index}.style`, font.style || 'normal');
-            if (font.data) {
-              span.setAttribute(`font.${index}.size_bytes`, font.data.length);
-            }
-          });
+      await spans.withSpan('assets.add_fonts', { 'fonts.count': fonts.length }, async span => {
+        // Add font details to span
+        fonts.forEach((font, index) => {
+          span.setAttribute(`font.${index}.name`, font.name);
+          span.setAttribute(`font.${index}.weight`, font.weight || 'normal');
+          span.setAttribute(`font.${index}.style`, font.style || 'normal');
+          if (font.data) {
+            span.setAttribute(`font.${index}.size_bytes`, font.data.length);
+          }
+        });
 
-          spans.addEvent('fonts.css_generation.start');
+        spans.addEvent('fonts.css_generation.start');
 
-          // Create CSS for all the fonts
-          const fontFaceCSS = fonts
-            .map(font => {
-              return `
+        // Create CSS for all the fonts
+        const fontFaceCSS = fonts
+          .map(font => {
+            return `
               @font-face {
                 font-family: '${font.name}';
                 font-weight: ${font.weight || 'normal'};
@@ -116,23 +116,22 @@ const addAssetsToPage = withTracing({
                 font-display: swap;
               }
             `;
-            })
-            .join('\n');
+          })
+          .join('\n');
 
-          spans.addEvent('fonts.css_generation.complete');
-          span.setAttribute('fonts.css_size_bytes', fontFaceCSS.length);
+        spans.addEvent('fonts.css_generation.complete');
+        span.setAttribute('fonts.css_size_bytes', fontFaceCSS.length);
 
-          // Add the font-face declarations to the page
-          spans.addEvent('fonts.add_style_tag.start');
-          await page.addStyleTag({ content: fontFaceCSS });
-          spans.addEvent('fonts.add_style_tag.complete');
+        // Add the font-face declarations to the page
+        spans.addEvent('fonts.add_style_tag.start');
+        await page.addStyleTag({ content: fontFaceCSS });
+        spans.addEvent('fonts.add_style_tag.complete');
 
-          // Wait a brief moment to allow any font processing
-          spans.addEvent('fonts.processing.start');
-          await page.waitForTimeout(50);
-          spans.addEvent('fonts.processing.complete');
-        }
-      );
+        // Wait a brief moment to allow any font processing
+        spans.addEvent('fonts.processing.start');
+        await page.waitForTimeout(50);
+        spans.addEvent('fonts.processing.complete');
+      });
     }
   } catch (error) {
     // Log and continue if there are issues with assets

@@ -10,16 +10,16 @@ const { validateOtelConfig } = require('../utils/telemetry-validator');
 module.exports = {
   // Validator
   validateOtelConfig,
-  
+
   // Core telemetry utilities
   ...require('./telemetry'),
-  
+
   // Higher-order function wrappers
   ...require('./wrappers'),
-  
+
   // Metrics registration and recording
   ...require('./metrics'),
-  
+
   // Router instrumentation
   ...require('./router')
 };

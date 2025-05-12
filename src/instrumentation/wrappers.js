@@ -15,10 +15,10 @@ const { getTracer, SpanStatusCode } = require('./telemetry');
  */
 function withTracing({ name, component = 'default', attributes = {} }) {
   const tracer = getTracer(component);
-  
-  return function(fn) {
+
+  return function (fn) {
     return async function tracedFn(...args) {
-      return tracer.startActiveSpan(name, async (span) => {
+      return tracer.startActiveSpan(name, async span => {
         try {
           // Add default attributes
           if (typeof attributes === 'function') {
@@ -40,7 +40,7 @@ function withTracing({ name, component = 'default', attributes = {} }) {
 
           // Execute the function
           const result = await fn.apply(this, args);
-          
+
           // Mark span as successful
           span.setStatus({ code: SpanStatusCode.OK });
           return result;
@@ -71,13 +71,13 @@ function withTracing({ name, component = 'default', attributes = {} }) {
  */
 function withTracedMiddleware({ name, component = 'middleware', attributesFn = null }) {
   const tracer = getTracer(component);
-  
-  return function(middleware) {
+
+  return function (middleware) {
     return function tracedMiddleware(req, res, next) {
-      return tracer.startActiveSpan(`middleware.${name}`, async (span) => {
+      return tracer.startActiveSpan(`middleware.${name}`, async span => {
         // Add request attributes - safely handle possibly undefined properties for testing
         span.setAttribute('http.method', req.method || 'UNKNOWN');
-        span.setAttribute('http.url', (req.originalUrl || req.url || ''));
+        span.setAttribute('http.url', req.originalUrl || req.url || '');
         span.setAttribute('http.path', req.path || '');
         span.setAttribute('http.client_ip', req.ip || '');
         span.setAttribute('request.id', (req.headers && req.headers['x-request-id']) || '');
@@ -102,7 +102,7 @@ function withTracedMiddleware({ name, component = 'middleware', attributesFn = n
         let responseEnded = false;
 
         // Patch res.end to capture response data
-        res.end = function(...args) {
+        res.end = function (...args) {
           if (!responseEnded) {
             responseEnded = true;
             span.setAttribute('http.status_code', res.statusCode);
@@ -115,7 +115,7 @@ function withTracedMiddleware({ name, component = 'middleware', attributesFn = n
         };
 
         // Set up next function to handle errors
-        const nextWithTracing = (err) => {
+        const nextWithTracing = err => {
           if (err) {
             span.recordException(err);
             span.setAttribute('error.message', err.message);
@@ -183,7 +183,7 @@ function withTracedMiddleware({ name, component = 'middleware', attributesFn = n
  */
 function createSpanManager({ component = 'default', parentSpan = null } = {}) {
   const tracer = getTracer(component);
-  
+
   return {
     /**
      * Creates a new span as a child of the parent span
@@ -191,14 +191,15 @@ function createSpanManager({ component = 'default', parentSpan = null } = {}) {
      * @param {Object} attributes - Span attributes
      */
     async withSpan(name, attributes = {}, fn) {
-      return tracer.startActiveSpan(name, 
-        parentSpan ? { parent: parentSpan } : undefined, 
-        async (span) => {
+      return tracer.startActiveSpan(
+        name,
+        parentSpan ? { parent: parentSpan } : undefined,
+        async span => {
           // Set attributes
           Object.entries(attributes).forEach(([key, value]) => {
             span.setAttribute(key, value);
           });
-          
+
           try {
             // Call function with span
             const result = await fn(span);
@@ -217,7 +218,7 @@ function createSpanManager({ component = 'default', parentSpan = null } = {}) {
         }
       );
     },
-    
+
     /**
      * Adds an event to the parent span if it exists
      * @param {string} name - Event name
@@ -228,7 +229,7 @@ function createSpanManager({ component = 'default', parentSpan = null } = {}) {
         parentSpan.addEvent(name, attributes);
       }
     },
-    
+
     /**
      * Adds an attribute to the parent span if it exists
      * @param {string} key - Attribute key
