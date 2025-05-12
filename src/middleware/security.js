@@ -1,4 +1,6 @@
 const { ApiError } = require('./error');
+const { withTracedMiddleware } = require('../instrumentation/wrappers');
+const { wrapMiddlewareWithErrorFormat } = require('../instrumentation/router');
 
 /**
  * Authenticates requests using API key
@@ -186,9 +188,57 @@ function isSafeUrl(url) {
   }
 }
 
+// Create instrumented versions of middlewares
+const instrumentedAuthenticateApiKey = wrapMiddlewareWithErrorFormat(
+  withTracedMiddleware({
+    name: 'authenticate_api_key',
+    attributesFn: req => ({
+      'auth.has_key': !!req.query.apiKey
+    })
+  })(authenticateApiKey)
+);
+
+const instrumentedValidatePayload = wrapMiddlewareWithErrorFormat(
+  withTracedMiddleware({
+    name: 'validate_payload',
+    attributesFn: req => ({
+      'validation.html_size': req.body.html?.length || 0,
+      'validation.has_viewport': !!req.body.viewport,
+      'validation.content_length': parseInt(req.headers['content-length'] || '0', 10)
+    })
+  })(validatePayload)
+);
+
+// Create a wrapper for the rate limit middleware that preserves the closure
+function instrumentedRateLimit(maxRequests = 60, windowMs = 60 * 1000) {
+  // Get the actual middleware function
+  const rateLimitMiddleware = rateLimit(maxRequests, windowMs);
+
+  // Return the instrumented version with error formatting
+  return wrapMiddlewareWithErrorFormat(
+    withTracedMiddleware({
+      name: 'rate_limit',
+      attributesFn: req => ({
+        'rate_limit.max_requests': maxRequests,
+        'rate_limit.window_ms': windowMs,
+        'rate_limit.ip': req.ip
+      })
+    })(rateLimitMiddleware)
+  );
+}
+
 module.exports = {
+  // Export both original and instrumented versions
   validatePayload,
   rateLimit,
   isSafeUrl,
-  authenticateApiKey
+  authenticateApiKey,
+
+  // By default export the instrumented versions
+  default: {
+    validatePayload: instrumentedValidatePayload,
+    rateLimit: instrumentedRateLimit,
+    isSafeUrl,
+    authenticateApiKey: instrumentedAuthenticateApiKey
+  }
 };

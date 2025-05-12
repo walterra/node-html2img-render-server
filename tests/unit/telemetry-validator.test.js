@@ -21,17 +21,18 @@ describe('Telemetry Validator', () => {
     process.env = originalEnv;
   });
 
-  test('Should detect missing required configuration', () => {
+  test('Should mark telemetry as disabled when missing configuration', () => {
     const result = validateOtelConfig();
 
-    expect(result.isValid).toBe(false);
+    expect(result.isValid).toBe(true);
+    expect(result.telemetryEnabled).toBe(false);
     expect(result.messages.length).toBeGreaterThan(0);
-    // Should check for both service name and endpoint
+    // Should mention the missing variables
+    expect(result.messages[0]).toContain('OpenTelemetry is disabled');
     expect(result.messages[0]).toContain('OTEL_SERVICE_NAME');
-    expect(result.messages[0]).toContain('OTEL_EXPORTER_OTLP_ENDPOINT');
   });
 
-  test('Should pass with all required configuration', () => {
+  test('Should mark telemetry as enabled with all required configuration', () => {
     process.env.OTEL_SERVICE_NAME = 'test-service';
     process.env.OTEL_EXPORTER_OTLP_ENDPOINT = 'https://example.com:4317';
     process.env.OTEL_EXPORTER_OTLP_HEADERS = 'Authorization=ApiKey test';
@@ -39,6 +40,7 @@ describe('Telemetry Validator', () => {
     const result = validateOtelConfig();
 
     expect(result.isValid).toBe(true);
+    expect(result.telemetryEnabled).toBe(true);
     expect(result.hasWarnings).toBe(false);
     expect(result.messages.length).toBe(0);
   });
@@ -50,6 +52,7 @@ describe('Telemetry Validator', () => {
     const result = validateOtelConfig();
 
     expect(result.isValid).toBe(true);
+    expect(result.telemetryEnabled).toBe(true);
     expect(result.hasWarnings).toBe(true);
     expect(result.messages.length).toBeGreaterThan(0);
     expect(result.messages[0]).toContain('OTEL_EXPORTER_OTLP_HEADERS');
@@ -62,6 +65,7 @@ describe('Telemetry Validator', () => {
     const result = validateOtelConfig();
 
     expect(result.isValid).toBe(false);
+    expect(result.telemetryEnabled).toBe(false);
     // Find the message about invalid URL format
     const invalidUrlMessage = result.messages.find(msg =>
       msg.includes('Invalid OTEL_EXPORTER_OTLP_ENDPOINT URL format')
@@ -76,6 +80,7 @@ describe('Telemetry Validator', () => {
     const result = validateOtelConfig();
 
     expect(result.isValid).toBe(false);
+    expect(result.telemetryEnabled).toBe(false);
     // Find the message about invalid protocol
     const invalidProtocolMessage = result.messages.find(msg =>
       msg.includes('Invalid OTEL_EXPORTER_OTLP_ENDPOINT protocol')
@@ -91,6 +96,7 @@ describe('Telemetry Validator', () => {
     const result = validateOtelConfig();
 
     expect(result.isValid).toBe(true); // Headers are optional
+    expect(result.telemetryEnabled).toBe(true);
     expect(result.hasWarnings).toBe(true);
     expect(result.messages.length).toBeGreaterThan(0);
     expect(result.messages[0]).toContain('Invalid OTEL_EXPORTER_OTLP_HEADERS format');
@@ -102,6 +108,7 @@ describe('Telemetry Validator', () => {
     const result = validateOtelConfig();
 
     expect(result.isValid).toBe(true);
+    expect(result.telemetryEnabled).toBe(false);
     expect(result.hasWarnings).toBe(true);
     expect(result.messages.length).toBeGreaterThan(0);
     expect(result.messages[0]).toContain('OpenTelemetry is explicitly disabled');

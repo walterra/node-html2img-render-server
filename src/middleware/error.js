@@ -1,4 +1,6 @@
 const winston = require('winston');
+const { withTracedMiddleware } = require('../instrumentation/wrappers');
+const { wrapMiddlewareWithErrorFormat } = require('../instrumentation/router');
 
 // Create logger instance
 const logger = winston.createLogger({
@@ -76,10 +78,53 @@ function timeout(timeout = 30000) {
   };
 }
 
+// Create instrumented versions of all middlewares
+const instrumentedErrorHandler = withTracedMiddleware({
+  name: 'error_handler',
+  attributesFn: req => ({
+    'error.path': req.path,
+    'error.method': req.method
+  })
+})(errorHandler);
+
+const instrumentedNotFound = wrapMiddlewareWithErrorFormat(
+  withTracedMiddleware({
+    name: 'not_found',
+    attributesFn: req => ({
+      'not_found.url': req.originalUrl
+    })
+  })(notFound)
+);
+
+// Instrumented timeout middleware
+function instrumentedTimeout(timeoutMs = 30000) {
+  // Get the original middleware
+  const timeoutMiddleware = timeout(timeoutMs);
+
+  // Return instrumented version with error formatting
+  return wrapMiddlewareWithErrorFormat(
+    withTracedMiddleware({
+      name: 'timeout',
+      attributesFn: req => ({
+        'timeout.duration_ms': timeoutMs
+      })
+    })(timeoutMiddleware)
+  );
+}
+
 module.exports = {
   ApiError,
   errorHandler,
   notFound,
   timeout,
-  logger
+  logger,
+
+  // By default export instrumented versions
+  default: {
+    errorHandler: instrumentedErrorHandler,
+    notFound: instrumentedNotFound,
+    timeout: instrumentedTimeout,
+    ApiError,
+    logger
+  }
 };

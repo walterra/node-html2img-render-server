@@ -2,6 +2,8 @@ const { chromium } = require('playwright');
 const { PNG } = require('pngjs');
 const { v4: uuidv4 } = require('uuid');
 const { addAssetsToPage } = require('./assets');
+const { withTracing, createSpanManager } = require('../instrumentation/wrappers');
+const { recordRenderMetrics } = require('../instrumentation/metrics');
 
 // Cache for the browser instance to improve performance
 let browserInstance = null;
@@ -9,22 +11,28 @@ let browserInstance = null;
 /**
  * Gets a browser instance, creating one if it doesn't exist
  */
-async function getBrowser() {
+const getBrowser = withTracing({
+  name: 'renderer.get_browser',
+  component: 'renderer'
+})(async function getBrowserImpl() {
   if (!browserInstance) {
     try {
       // Try with environment variable for Docker environments
       process.env.PLAYWRIGHT_BROWSERS_PATH =
         process.env.PLAYWRIGHT_BROWSERS_PATH || '/home/renderuser/.cache/ms-playwright';
+
       browserInstance = await chromium.launch({
         headless: true,
         args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
       });
     } catch (error) {
       console.error('Error launching browser:', error.message);
+      throw error;
     }
   }
+
   return browserInstance;
-}
+});
 
 /**
  * Creates an HTML file with the provided content
@@ -69,7 +77,10 @@ function createHTMLContent(params) {
  * @param {Object} metadata - Metadata to embed
  * @returns {Buffer} - PNG with embedded metadata
  */
-function embedMetadataInImage(imageBuffer, metadata) {
+const embedMetadataInImage = withTracing({
+  name: 'renderer.embed_metadata',
+  component: 'renderer'
+})(async function embedMetadataInImageImpl(imageBuffer, metadata) {
   try {
     // Parse the PNG file
     const png = PNG.sync.read(imageBuffer);
@@ -88,14 +99,29 @@ function embedMetadataInImage(imageBuffer, metadata) {
     console.error('Error embedding metadata in PNG:', error);
     return imageBuffer; // Return original if embedding fails
   }
-}
+});
 
 /**
  * Renders HTML content and returns the screenshot
  * @param {object} params - Rendering parameters
  * @returns {object} - Screenshot buffer and metadata
  */
-async function renderHTML(params) {
+const renderHTML = withTracing({
+  name: 'renderer.render_html',
+  component: 'renderer',
+  attributes: params => ({
+    'html.size_bytes': params.html?.length || 0,
+    'css.size_bytes': params.css?.length || 0,
+    'js.size_bytes': params.javascript?.length || 0,
+    format: params.format || 'png',
+    'viewport.width': params.viewport?.width || 1280,
+    'viewport.height': params.viewport?.height || 720,
+    'viewport.scale': params.viewport?.deviceScaleFactor || 1,
+    has_assets: !!(params.assets || params.fonts),
+    wait_for_selector: !!params.waitForSelector,
+    clip_selector: !!params.clipSelector
+  })
+})(async function renderHTMLImpl(params) {
   const {
     html,
     css,
@@ -110,21 +136,56 @@ async function renderHTML(params) {
     quality = 90 // JPEG quality (1-100)
   } = params;
 
-  const browser = await getBrowser();
+  let browser,
+    context,
+    page = null;
+  let screenshotBuffer, renderingTime, browserVersion;
 
-  const context = await browser.newContext({
-    viewport,
-    deviceScaleFactor: viewport.deviceScaleFactor || 1,
-    userAgent: 'html2img-render-server/1.0.1'
-  });
-
-  let page = null;
+  // Create span manager for nested spans
+  const spans = createSpanManager({ component: 'renderer' });
 
   try {
-    page = await context.newPage();
+    // Get browser
+    browser = await getBrowser();
 
-    const htmlContent = createHTMLContent({ html, css, javascript });
-    await page.setContent(htmlContent, { waitUntil: 'networkidle' });
+    // Create browser context
+    context = await spans.withSpan(
+      'renderer.create_context',
+      {
+        'viewport.width': viewport.width,
+        'viewport.height': viewport.height,
+        'viewport.scale': viewport.deviceScaleFactor || 1
+      },
+      async () => {
+        return browser.newContext({
+          viewport,
+          deviceScaleFactor: viewport.deviceScaleFactor || 1,
+          userAgent: 'html2img-render-server/1.0.1'
+        });
+      }
+    );
+
+    // Create page
+    page = await spans.withSpan('renderer.create_page', {}, async () => {
+      return context.newPage();
+    });
+
+    // Set HTML content
+    await spans.withSpan(
+      'renderer.set_content',
+      {
+        'content.size_bytes': createHTMLContent({ html, css, javascript }).length
+      },
+      async span => {
+        spans.addEvent('content.generate.start');
+        const htmlContent = createHTMLContent({ html, css, javascript });
+        spans.addEvent('content.generate.complete');
+
+        spans.addEvent('content.load.start');
+        await page.setContent(htmlContent, { waitUntil: 'networkidle' });
+        spans.addEvent('content.load.complete');
+      }
+    );
 
     // Add assets and fonts if provided
     if (assets || fonts) {
@@ -133,46 +194,95 @@ async function renderHTML(params) {
 
     // Wait for selector if specified
     if (waitForSelector) {
-      await page.waitForSelector(waitForSelector, { timeout: 5000 });
+      await spans.withSpan(
+        'renderer.wait_for_selector',
+        {
+          selector: waitForSelector
+        },
+        async span => {
+          spans.addEvent('wait.start');
+          await page.waitForSelector(waitForSelector, { timeout: 5000 });
+          spans.addEvent('wait.complete');
+        }
+      );
     }
 
     // Take screenshot
-    const startTime = Date.now();
+    const screenshotData = await spans.withSpan(
+      'renderer.take_screenshot',
+      {
+        format: format,
+        quality: format === 'jpeg' ? quality : undefined
+      },
+      async span => {
+        const startTime = Date.now();
 
-    const screenshotOptions = {
-      type: format === 'jpeg' ? 'jpeg' : 'png',
-      fullPage: !clipSelector,
-      omitBackground: false
-    };
+        spans.addEvent('screenshot.prepare.start');
 
-    // Add quality option for JPEG format
-    if (format === 'jpeg') {
-      screenshotOptions.quality = quality; // Use provided quality or default (90)
-    }
+        const screenshotOptions = {
+          type: format === 'jpeg' ? 'jpeg' : 'png',
+          fullPage: !clipSelector,
+          omitBackground: false
+        };
 
-    // Clip to selector if specified
-    if (clipSelector) {
-      try {
-        const element = await page.$(clipSelector);
-        if (element) {
-          const boundingBox = await element.boundingBox();
-          if (boundingBox) {
-            screenshotOptions.clip = boundingBox;
-            delete screenshotOptions.fullPage;
-          }
+        // Add quality option for JPEG format
+        if (format === 'jpeg') {
+          screenshotOptions.quality = quality;
+          span.setAttribute('jpeg.quality', quality);
         }
-      } catch (error) {
-        console.error(`Error clipping to selector ${clipSelector}:`, error);
+
+        // Clip to selector if specified
+        if (clipSelector) {
+          spans.addEvent('clip.lookup.start');
+
+          try {
+            const element = await page.$(clipSelector);
+            if (element) {
+              const boundingBox = await element.boundingBox();
+              if (boundingBox) {
+                screenshotOptions.clip = boundingBox;
+                delete screenshotOptions.fullPage;
+
+                span.setAttribute('clip.found', true);
+                span.setAttribute('clip.x', boundingBox.x);
+                span.setAttribute('clip.y', boundingBox.y);
+                span.setAttribute('clip.width', boundingBox.width);
+                span.setAttribute('clip.height', boundingBox.height);
+              } else {
+                span.setAttribute('clip.found', false);
+                span.setAttribute('clip.error', 'No bounding box');
+              }
+            } else {
+              span.setAttribute('clip.found', false);
+              span.setAttribute('clip.error', 'Element not found');
+            }
+          } catch (error) {
+            console.error(`Error clipping to selector ${clipSelector}:`, error);
+            span.setAttribute('clip.error', error.message);
+          }
+
+          spans.addEvent('clip.lookup.complete');
+        }
+
+        spans.addEvent('screenshot.capture.start');
+        const buffer = await page.screenshot(screenshotOptions);
+        spans.addEvent('screenshot.capture.complete');
+
+        const captureTime = Date.now() - startTime;
+
+        return {
+          buffer,
+          captureTime,
+          screenshotOptions
+        };
       }
-    }
+    );
 
-    // Take screenshot and get buffer directly
-    const screenshotBuffer = await page.screenshot(screenshotOptions);
+    screenshotBuffer = screenshotData.buffer;
+    renderingTime = screenshotData.captureTime;
 
-    const renderingTime = Date.now() - startTime;
-
-    // Get browser version
-    const browserVersion = await browser.version();
+    // Get browser version and create metadata
+    browserVersion = await browser.version();
 
     // Generate a unique ID for reference
     const screenshotId = uuidv4();
@@ -189,17 +299,26 @@ async function renderHTML(params) {
     // Embed metadata in image if requested (only for PNG)
     let finalImageBuffer;
     if (embedMetadata && format === 'png') {
-      finalImageBuffer = await embedMetadataInImage(screenshotBuffer, metadata);
+      try {
+        finalImageBuffer = await embedMetadataInImage(screenshotBuffer, metadata);
+      } catch (error) {
+        console.error('Error embedding metadata:', error);
+        finalImageBuffer = screenshotBuffer; // Fallback to original on error
+      }
     } else {
       finalImageBuffer = screenshotBuffer;
     }
 
     // Determine content type based on format
     const contentType = format === 'jpeg' ? 'image/jpeg' : 'image/png';
-
-    // We already handled conditional metadata embedding above
-    // So just use the finalImageBuffer that contains the correct version
     const outputBuffer = finalImageBuffer;
+
+    // Record metrics
+    recordRenderMetrics({
+      format,
+      durationMs: renderingTime,
+      sizeBytes: outputBuffer.length
+    });
 
     // Return both image and metadata
     return {
@@ -207,13 +326,25 @@ async function renderHTML(params) {
       metadata,
       contentType
     };
+  } catch (error) {
+    // Record error metrics
+    if (format) {
+      recordRenderMetrics({
+        format,
+        error: true
+      });
+    }
+    throw error;
   } finally {
+    // Clean up resources
     if (page) {
       await page.close();
     }
-    await context.close();
+    if (context) {
+      await context.close();
+    }
   }
-}
+});
 
 /**
  * Cleanly closes the browser instance

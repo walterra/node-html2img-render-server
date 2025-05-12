@@ -80,5 +80,16 @@ RUN groupadd -r renderuser && useradd -r -g renderuser -G audio,video renderuser
     && chown -R renderuser:renderuser /app
 USER renderuser
 
-# Start the server with OpenTelemetry enabled
-CMD ["node", "-r", "@elastic/opentelemetry-node", "server.js"]
+# Create entrypoint script that conditionally loads telemetry
+RUN echo '#!/bin/sh\n\
+if [ -n "$OTEL_EXPORTER_OTLP_ENDPOINT" ]; then\n\
+  echo "Starting with OpenTelemetry enabled"\n\
+  exec node -r @elastic/opentelemetry-node server.js\n\
+else\n\
+  echo "Starting without OpenTelemetry (OTEL_EXPORTER_OTLP_ENDPOINT not set)"\n\
+  exec node server.js\n\
+fi' > /app/docker-entrypoint.sh && \
+chmod +x /app/docker-entrypoint.sh
+
+# Use the entrypoint script
+ENTRYPOINT ["/app/docker-entrypoint.sh"]

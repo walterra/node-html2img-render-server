@@ -190,26 +190,198 @@ The service includes robust error handling for telemetry issues:
    - The file `src/utils/telemetry-validator.js` contains validation logic that's run at startup
    - Test coverage ensures validation works properly
 
+## Custom Instrumentation
+
+The service now includes a comprehensive custom instrumentation framework that enhances the automatic instrumentation provided by `@elastic/opentelemetry-node`. This framework provides consistent tracing across all service components with minimal code changes.
+
+### Instrumentation Utilities
+
+The custom instrumentation framework is implemented in `src/utils/telemetry.js` and provides several useful utilities:
+
+#### 1. Traced Functions
+
+```javascript
+const { createTracedFunction } = require('../utils/telemetry');
+
+// Original function
+async function processData(data) {
+  // Implementation
+}
+
+// Traced version
+const tracedProcessData = createTracedFunction('data.process', processData, {
+  component: 'processor',
+  attributes: {
+    'data.type': data => data.type,
+    'data.size': data => data.size
+  }
+});
+
+// Usage: same as original function
+await tracedProcessData(someData);
+```
+
+#### 2. Express Middleware Instrumentation
+
+```javascript
+const { createTracedMiddleware } = require('../utils/telemetry');
+
+// Original middleware
+function validatePayload(req, res, next) {
+  // Implementation
+}
+
+// Traced version
+const tracedMiddleware = createTracedMiddleware('validate_payload', validatePayload, {
+  attributesFn: req => ({
+    'validation.content_length': parseInt(req.headers['content-length'] || '0', 10)
+  })
+});
+
+// Usage: same as original middleware
+app.use(tracedMiddleware);
+```
+
+#### 3. Instrumented Express Routers
+
+```javascript
+const { createInstrumentedRouter } = require('../utils/telemetry');
+
+// Create an instrumented router
+const router = createInstrumentedRouter('render');
+
+// Use it like a normal Express router
+router.post('/', authenticateApiKey, async (req, res) => {
+  // All middleware and route handlers are automatically instrumented
+});
+```
+
+#### 4. Custom Metrics
+
+```javascript
+const { recordRenderMetrics } = require('../utils/telemetry');
+
+// Record metrics about a rendering operation
+recordRenderMetrics({
+  format: 'png',
+  durationMs: 150,
+  sizeBytes: 65536
+});
+```
+
+### Key Instrumented Components
+
+The service uses these utilities to provide detailed tracing for:
+
+1. **Express Middleware**:
+
+   - Authentication
+   - Validation
+   - Rate limiting
+   - Error handling
+
+2. **API Routes**:
+
+   - Render endpoint
+   - Metadata extraction
+
+3. **Core Services**:
+   - HTML rendering
+   - Screenshot capture
+   - Asset management
+   - Font handling
+
+### Span Hierarchy
+
+The instrumentation creates a detailed span hierarchy:
+
+- `api.render` (API request)
+  - `middleware.authenticate_api_key`
+  - `middleware.validate_payload`
+  - `renderer.render_html`
+    - `renderer.get_browser`
+    - `renderer.create_context`
+    - `renderer.create_page`
+    - `renderer.set_content`
+    - `assets.add_to_page`
+      - `assets.setup_interceptor`
+      - `assets.add_fonts`
+    - `renderer.wait_for_selector`
+    - `renderer.take_screenshot`
+    - `renderer.create_metadata`
+    - `renderer.embed_metadata`
+
+### Span Attributes
+
+Each span includes detailed attributes relevant to its operation:
+
+- HTTP context: `http.method`, `http.url`, `http.status_code`
+- Request details: `request.ip`, `request.user_agent`, `request.response_format`
+- Content info: `html.size_bytes`, `css.size_bytes`, `js.size_bytes`
+- Rendering details: `viewport.width`, `viewport.height`, `format`
+- Performance: `render.duration_ms`, `render.size_bytes`
+- Errors: `error.message`, `error.type`, `error.category`
+
+### Custom Metrics
+
+The service tracks several custom metrics:
+
+1. **Counters**:
+
+   - `html_render_count`: Number of rendering operations by format and status
+
+2. **Histograms**:
+   - `html_render_duration_ms`: Distribution of rendering times
+   - `screenshot_size_bytes`: Distribution of screenshot sizes
+
 ## Extending Telemetry
 
-You can access the OpenTelemetry API to add custom instrumentation if needed:
+You can access the OpenTelemetry API directly for more advanced use cases:
 
 ```javascript
 const { trace } = require('@opentelemetry/api');
+const { getTracer } = require('../utils/telemetry');
 
-// Get the current active span
-const span = trace.getActiveSpan();
-if (span) {
-  span.setAttribute('custom.attribute', 'value');
-}
+// Get a tracer for your component
+const tracer = getTracer('my-component');
 
 // Create a custom span for a specific operation
-const tracer = trace.getTracer('my-service');
 await tracer.startActiveSpan('custom.operation', async span => {
   try {
-    // Operation code here
+    // Add attributes
+    span.setAttribute('custom.attribute', 'value');
+
+    // Record events
+    span.addEvent('operation.started', { timestamp: Date.now() });
+
+    // Your operation code here
+
+    // Set success status
+    span.setStatus({ code: SpanStatusCode.OK });
+  } catch (error) {
+    // Record errors
+    span.recordException(error);
+    span.setStatus({
+      code: SpanStatusCode.ERROR,
+      message: error.message
+    });
+    throw error;
   } finally {
+    // Always end the span
     span.end();
   }
 });
 ```
+
+### Best Practices
+
+When adding custom instrumentation:
+
+1. **Use existing utilities** when possible instead of direct API access
+2. **Follow naming conventions**:
+   - Use `component.operation` format for span names
+   - Use dot notation for attribute names
+3. **Always end spans** in finally blocks
+4. **Record all errors** with `recordException`
+5. **Set appropriate status** for all spans
+6. **Add meaningful attributes** that provide context

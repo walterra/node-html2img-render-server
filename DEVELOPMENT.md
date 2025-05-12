@@ -182,14 +182,15 @@ The service automatically loads the OpenTelemetry instrumentation at startup via
 
 1. Update version in `package.json`
 2. Update the CHANGELOG.md with the new version details
-3. Commit changes and tag the release:
+3. Create release notes in `docs/release-notes`.
+4. Commit changes and tag the release:
    ```bash
    git add .
    git commit -m "Release v1.x.x"
    git tag v1.x.x
    git push origin main --tags
    ```
-4. Publish to npm:
+5. Publish to npm:
    ```bash
    npm publish
    ```
